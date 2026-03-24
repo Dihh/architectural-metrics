@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Architecture Smell Detector</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header>
+  <div class="header-icon">🔍</div>
+  <h1>Architecture Smell Detector</h1>
+  <div class="spacer"></div>
+  <button id="btnReport" style="display:none">📋 Relatório</button>
+  <button id="btnNew">↩ Nova Análise</button>
+</header>
+
+<!-- ═══════════════════ REPORT MODAL ═══════════════════ -->
+<div id="reportModal" class="report-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Relatório de Architecture Smells">
+  <div class="report-card">
+    <div class="report-header">
+      <span class="report-title">📋 Relatório de Architecture Smells</span>
+      <button class="report-close" id="btnReportClose" aria-label="Fechar">✕</button>
+    </div>
+    <div class="report-body" id="reportBody"></div>
+    <div class="report-footer">
+      <button class="report-export-btn" id="btnReportCopy">⎘ Copiar como texto</button>
+      <button class="report-export-btn" id="btnReportLatex">⎘ Copiar como LaTeX</button>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ─── UPLOAD SCREEN ─── -->
+  <div id="uploadScreen">
+    <div class="dropzone" id="dropzone">
+      <div class="dz-icon">📂</div>
+      <h2>Selecione a pasta do projeto</h2>
+      <p>Arraste e solte ou clique para navegar</p>
+      <div class="dz-hint">.js &nbsp;·&nbsp; .ts &nbsp;·&nbsp; .jsx &nbsp;·&nbsp; .tsx &nbsp;·&nbsp; .mjs</div>
+      <input type="file" id="folderInput" webkitdirectory multiple />
+    </div>
+    <p class="upload-note">
+      Os arquivos são processados <strong>localmente no navegador</strong>.<br>
+      Nenhum dado é enviado a servidores externos.
+    </p>
+    <p class="upload-note upload-note-mobile">
+      Seleção de pasta requer Android Chrome ou desktop.<br>
+      iOS Safari não suporta upload de pastas.
+    </p>
+  </div>
+
+  <!-- ─── LOADING SCREEN ─── -->
+  <div id="loadingScreen">
+    <div class="spinner"></div>
+    <p id="loadingText">Lendo arquivos…</p>
+  </div>
+
+  <!-- ─── RESULTS SCREEN ─── -->
+  <div id="resultsScreen">
+
+    <!-- Smell Tabs -->
+    <div class="smell-tabs">
+      <button class="smell-tab active" data-smell="cyclic">
+        <span class="stab-icon">⟳</span> Cyclic Dependency
+        <span class="stab-count" id="tabCyclic">0</span>
+      </button>
+      <button class="smell-tab" data-smell="hub">
+        <span class="stab-icon">◎</span> Hub-Like Dependency
+        <span class="stab-count" id="tabHub">0</span>
+      </button>
+      <button class="smell-tab" data-smell="god">
+        <span class="stab-icon">⊕</span> God Component
+        <span class="stab-count" id="tabGod">0</span>
+      </button>
+      <button class="smell-tab" data-smell="chatty">
+        <span class="stab-icon">⇄</span> Chatty Component
+        <span class="stab-count" id="tabChatty">0</span>
+      </button>
+      <button class="smell-tab" data-smell="hotspot">
+        <span class="stab-icon">🔥</span> Hotspot
+        <span class="stab-count" id="tabHotspot">–</span>
+      </button>
+      <button class="smell-tab" data-smell="arch">
+        <span class="stab-icon">⬡</span> Arch Hotspot
+        <span class="stab-count" id="tabArch">–</span>
+      </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value" id="statFiles">0</div>
+        <div class="stat-label">Arquivos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statDeps">0</div>
+        <div class="stat-label">Dependências</div>
+      </div>
+      <div class="stat-card" id="statCard3">
+        <div class="stat-value" id="statVal3">0</div>
+        <div class="stat-label" id="statLbl3">Ciclos</div>
+      </div>
+      <div class="stat-card" id="statCard4">
+        <div class="stat-value" id="statVal4">0</div>
+        <div class="stat-label" id="statLbl4">Módulos Afetados</div>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="toggle-group" id="viewToggleGroup">
+        <!-- populated by updateViewToggles() -->
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" data-zoom="in"    title="Ampliar">+</button>
+        <button class="zoom-btn" data-zoom="out"   title="Reduzir">−</button>
+        <button class="zoom-btn" data-zoom="reset" title="Resetar zoom">⌖</button>
+      </div>
+      <span class="ctrl-info ctrl-info-desktop">Scroll para zoom &nbsp;·&nbsp; Arraste para mover &nbsp;·&nbsp; Clique para destacar</span>
+      <span class="ctrl-info ctrl-info-mobile">Pinça para zoom &nbsp;·&nbsp; Toque para destacar</span>
+    </div>
+
+    <!-- Content -->
+    <div class="content-area">
+      <div class="graph-panel">
+        <svg id="graphSvg"></svg>
+        <div class="graph-legend" id="graphLegend"></div>
+      </div>
+      <div class="list-panel">
+        <div class="list-header">
+          <span id="listTitle">Ciclos Detectados</span>
+          <span class="list-badge cyclic" id="listBadge">0</span>
+          <div class="list-view-toggle" id="listViewToggle">
+            <button class="lv-btn active" data-list-view="cards" title="Visualização em cards">⊟</button>
+            <button class="lv-btn"        data-list-view="table" title="Visualização em tabela">≣</button>
+          </div>
+        </div>
+        <div id="smellList"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Single entry point — ES modules handle the rest -->
+<script type="module" src="ui.js"></script>
+</body>
+</html>
