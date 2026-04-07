@@ -148,11 +148,14 @@ export function computeGodScore(loc, funcCount, exportCount, importCount) {
 
 export function detectGodComponents() {
   const gods = [];
+  const metricsMap = new Map();
 
   for (const [path, content] of state.fileMap) {
     const { loc, funcCount, exportCount } = computeGodMetrics(content);
     const importCount = state.depGraph.get(path)?.size ?? 0;
     const { score, flags } = computeGodScore(loc, funcCount, exportCount, importCount);
+
+    metricsMap.set(path, { loc, funcCount, exportCount, importCount, score });
 
     if (score >= GOD_MIN_SCORE) {
       const sev = score >= 6 ? 'high' : score >= 4 ? 'medium' : 'low';
@@ -161,8 +164,9 @@ export function detectGodComponents() {
   }
 
   gods.sort((a, b) => b.score - a.score);
-  state.godModules   = gods;
-  state.godNodePaths = new Set(gods.map(g => g.path));
+  state.godModules    = gods;
+  state.godNodePaths  = new Set(gods.map(g => g.path));
+  state.godMetricsMap = metricsMap;
 }
 
 // ─────────────────────────────────────────
@@ -217,10 +221,13 @@ export function computeChattyScore(namedImports, maxFromOne) {
 
 export function detectChattyComponents() {
   const chatty = [];
+  const metricsMap = new Map();
 
   for (const [path, content] of state.fileMap) {
     const { namedImports, maxFromOne, topDep } = computeChattyMetrics(content);
     const { score, flags } = computeChattyScore(namedImports, maxFromOne);
+
+    metricsMap.set(path, { namedImports, maxFromOne, topDep, score });
 
     if (score >= CHATTY_MIN_SCORE) {
       const sev = score >= 6 ? 'high' : score >= 4 ? 'medium' : 'low';
@@ -229,8 +236,9 @@ export function detectChattyComponents() {
   }
 
   chatty.sort((a, b) => b.score - a.score);
-  state.chattyModules   = chatty;
-  state.chattyNodePaths = new Set(chatty.map(c => c.path));
+  state.chattyModules    = chatty;
+  state.chattyNodePaths  = new Set(chatty.map(c => c.path));
+  state.chattyMetricsMap = metricsMap;
 }
 
 // ─────────────────────────────────────────

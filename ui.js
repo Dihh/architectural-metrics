@@ -1,16 +1,129 @@
 // Current list presentation mode — module-level, persists across smell switches
 let listView = 'cards'; // 'cards' | 'table'
 
+// ─────────────────────────────────────────
+// Metric info definitions (used by modal)
+// ─────────────────────────────────────────
+const METRIC_INFO = {
+  loc: {
+    icon: '≡',
+    title: 'LOC — Lines of Code',
+    desc: `<p><strong>Linhas de código</strong> não vazias e sem comentários puros no arquivo.</p>
+           <p>É o indicador mais básico de tamanho. Arquivos muito grandes tendem a acumular múltiplas responsabilidades que deveriam ser separadas em módulos menores — violando o <em>Princípio da Responsabilidade Única</em>.</p>`,
+    thresholds: [{ label: '≥ 300 linhas', cls: 'med' }, { label: '≥ 500 linhas', cls: 'high' }],
+  },
+  func: {
+    icon: 'ƒ',
+    title: 'Funções declaradas',
+    desc: `<p>Contagem de <strong>declarações <code>function</code></strong> e <strong>arrow functions</strong> <code>=></code> no arquivo.</p>
+           <p>Um módulo com muitas funções está provavelmente fazendo mais do que deveria. Cada função adicional aumenta a carga cognitiva de quem lê o código.</p>`,
+    thresholds: [{ label: '≥ 15 funções', cls: 'med' }, { label: '≥ 25 funções', cls: 'high' }],
+  },
+  exp: {
+    icon: '↑',
+    title: 'Exports — Interface Pública',
+    desc: `<p>Número de <strong>símbolos exportados</strong> pelo módulo (<code>export const</code>, <code>export function</code>, <code>export class</code>, etc.).</p>
+           <p>Uma interface pública muito grande pode indicar falta de coesão — o módulo expõe demais para o mundo externo, tornando-se difícil de substituir ou refatorar.</p>`,
+    thresholds: [{ label: '≥ 6 exports', cls: 'med' }, { label: '≥ 12 exports', cls: 'high' }],
+  },
+  imp: {
+    icon: '↓',
+    title: 'Fan-out — Dependências de Saída',
+    desc: `<p>Quantidade de <strong>módulos que este arquivo importa</strong> diretamente.</p>
+           <p>Alto fan-out indica forte acoplamento de saída: o arquivo depende de muitos outros. Isso dificulta testes isolados e aumenta a probabilidade de quebrar quando qualquer dependência muda.</p>`,
+    thresholds: [{ label: '≥ 10 imports', cls: 'med' }],
+  },
+  'fan-in': {
+    icon: '←',
+    title: 'Fan-in — Dependências de Entrada',
+    desc: `<p>Quantidade de <strong>módulos que importam este arquivo</strong>.</p>
+           <p>Alto fan-in significa que muitos outros módulos dependem deste. Mudanças nele podem propagar impactos por toda a base de código. Quando combinado com alto fan-out, forma um <em>Hub</em> — ponto crítico de acoplamento.</p>`,
+    thresholds: [{ label: `≥ 3 fan-in (Hub: total ≥ 8)`, cls: 'med' }],
+  },
+  'fan-out': {
+    icon: '→',
+    title: 'Fan-out — Dependências de Saída',
+    desc: `<p>Quantidade de <strong>módulos que este arquivo importa</strong> diretamente.</p>
+           <p>Alto fan-out indica que o módulo depende de muitas partes do sistema. Quando combinado com alto fan-in, forma um <em>Hub</em> — ponto crítico de acoplamento bidirecional.</p>`,
+    thresholds: [{ label: `≥ 3 fan-out (Hub: total ≥ 8)`, cls: 'med' }],
+  },
+  named: {
+    icon: '⇄',
+    title: 'Símbolos Importados',
+    desc: `<p>Total de <strong>símbolos nomeados</strong> importados via destructuring <code>{ a, b, c }</code> em todos os imports do arquivo.</p>
+           <p>Alta contagem indica que o componente consome fortemente as interfaces de seus dependentes, tornando-o frágil a mudanças nas APIs externas.</p>`,
+    thresholds: [{ label: '≥ 15 símbolos', cls: 'med' }, { label: '≥ 30 símbolos', cls: 'high' }],
+  },
+  max: {
+    icon: '↗',
+    title: 'Máx. de uma Dependência',
+    desc: `<p>O maior número de símbolos importados de <strong>uma única dependência</strong>.</p>
+           <p>Indica acoplamento forte e específico — o componente depende intensamente de um único módulo. Se esse módulo mudar sua API, o impacto será grande.</p>`,
+    thresholds: [{ label: '≥ 6 símbolos', cls: 'med' }, { label: '≥ 10 símbolos', cls: 'high' }],
+  },
+  freq: {
+    icon: '↻',
+    title: 'Commits — Frequência de Mudanças',
+    desc: `<p>Número de <strong>commits que modificaram este arquivo</strong> no histórico git.</p>
+           <p>Alta frequência de mudanças em um arquivo grande é o sinal clássico de <em>hotspot</em>: uma área do sistema que o time precisa tocar constantemente, acumulando dívida técnica.</p>
+           <p>Gere o arquivo com: <code>git log --pretty=format:"%H %ai %an" --numstat > commits.txt</code></p>`,
+    thresholds: [{ label: '≥ 10 commits', cls: 'med' }, { label: '≥ 25 commits', cls: 'high' }],
+  },
+  centrality: {
+    icon: '⟺',
+    title: 'Centralidade — Importância na Rede',
+    desc: `<p>Soma de <strong>fan-in + fan-out</strong> do módulo. Mede o quão central ele é na rede de dependências do projeto.</p>
+           <p>Alta centralidade significa que o módulo conecta muitas partes do sistema. Quando combinada com alta frequência de mudanças e grande tamanho, indica um <em>Architectural Hotspot</em> — o risco arquitetural mais grave.</p>`,
+    thresholds: [{ label: '≥ 8 conexões', cls: 'med' }, { label: '≥ 15 conexões', cls: 'high' }],
+  },
+  deps: {
+    icon: '🔗',
+    title: 'Dependências — Total de Arestas',
+    desc: `<p>Número total de <strong>conexões direcionadas únicas</strong> entre arquivos do projeto — ou seja, cada relação "<em>arquivo A importa arquivo B</em>" resolvida com sucesso conta como uma dependência.</p>
+           <p>Importações duplicadas dentro do mesmo arquivo são contadas apenas uma vez (o grafo usa <code>Set</code> internamente). Imports para bibliotecas externas ou caminhos não resolvidos <strong>não</strong> são incluídos.</p>
+           <p>Esse número representa o tamanho do grafo de dependências e dá uma ideia geral do <strong>nível de acoplamento</strong> do projeto.</p>`,
+    thresholds: [],
+  },
+};
+
+function openMetricModal(key) {
+  const info = METRIC_INFO[key];
+  if (!info) return;
+
+  document.getElementById('miIcon').textContent  = info.icon;
+  document.getElementById('miTitle').textContent = info.title;
+
+  const thresholdsHtml = info.thresholds?.length
+    ? `<div class="mi-thresholds">
+         <div class="mi-thresholds-title">Limiares de detecção</div>
+         <div class="mi-thr-row">
+           ${info.thresholds.map(t => `<span class="mi-thr-chip ${t.cls}">${t.label}</span>`).join('')}
+         </div>
+       </div>`
+    : '';
+
+  document.getElementById('miBody').innerHTML = info.desc + thresholdsHtml;
+  document.getElementById('metricInfoModal').style.display = 'flex';
+}
+
+function closeMetricModal() {
+  document.getElementById('metricInfoModal').style.display = 'none';
+}
+
 import {
   state,
-  HUB_MIN_IN, HUB_MIN_OUT,
+  HUB_MIN_IN, HUB_MIN_OUT, HUB_MIN_TOTAL,
   GOD_LOC_MED, GOD_FUNC_MED, GOD_EXP_MED,
   GOD_LOC_HIGH, GOD_FUNC_HIGH, GOD_EXP_HIGH, GOD_IMP_MIN,
   CHATTY_NAMED_MED, CHATTY_NAMED_HIGH, CHATTY_MAX_MED, CHATTY_MAX_HIGH,
   HOTSPOT_FREQ_MED, HOTSPOT_FREQ_HIGH, HOTSPOT_LOC_MED, HOTSPOT_LOC_HIGH,
   ARCH_CENTRALITY_MED, ARCH_CENTRALITY_HIGH,
 } from './state.js';
-import { analyseFiles, findCyclePath, tick } from './detectors.js';
+import {
+  analyseFiles, findCyclePath, tick,
+  computeGodMetrics, computeGodScore,
+  computeChattyMetrics, computeChattyScore,
+} from './detectors.js';
 import {
   renderGraph,
   resetGraphOpacity,
@@ -26,15 +139,20 @@ function renderCycleList() {
   const el = document.getElementById('smellList');
 
   if (state.cyclicSCCs.length === 0) {
-    el.innerHTML = `<div class="no-results">
-      <div class="no-results-icon">✅</div>
-      <strong>Nenhum ciclo detectado!</strong>
-      <p style="margin-top:8px;font-size:12px">O código não apresenta dependências cíclicas.</p>
-    </div>`;
+    el.innerHTML = `<div class="threshold-info">
+        Detectado via algoritmo de Tarjan (SCC ≥ 2 nós)
+      </div>
+      <div class="no-results">
+        <div class="no-results-icon">✅</div>
+        <strong>Nenhum ciclo detectado!</strong>
+        <p style="margin-top:8px;font-size:12px">O código não apresenta dependências cíclicas.</p>
+      </div>`;
     return;
   }
 
-  el.innerHTML = '';
+  el.innerHTML = `<div class="threshold-info">
+    Algoritmo de Tarjan — reporta ciclos com ≥ 2 módulos · Severidade por tamanho do ciclo: ≥ 5 módulos = ALTO · ≥ 3 = MÉDIO · 2 módulos = BAIXO
+  </div>`;
   state.cyclicSCCs.forEach((scc, i) => {
     const sev   = scc.length >= 5 ? 'high' : scc.length >= 3 ? 'medium' : 'low';
     const label = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
@@ -71,48 +189,54 @@ function renderCycleList() {
 // ─────────────────────────────────────────
 function renderHubList() {
   const el = document.getElementById('smellList');
+  el.innerHTML = `<div class="threshold-info">
+    Limiar: fan-in ≥ <strong>${HUB_MIN_IN}</strong> · fan-out ≥ <strong>${HUB_MIN_OUT}</strong> · total ≥ <strong>${HUB_MIN_TOTAL}</strong>
+  </div>`;
 
-  if (state.hubModules.length === 0) {
-    el.innerHTML = `<div class="no-results">
-      <div class="no-results-icon">✅</div>
-      <strong>Nenhum hub detectado!</strong>
-      <p style="margin-top:8px;font-size:12px">
-        Nenhum módulo concentra alto fan-in e fan-out.<br>
-        <span style="font-size:10px;opacity:.7">(Limiar: fan-in ≥ ${HUB_MIN_IN} e fan-out ≥ ${HUB_MIN_OUT})</span>
-      </p>
-    </div>`;
-    return;
+  // Build metrics for ALL files
+  const allFiles = [];
+  for (const [path] of state.fileMap) {
+    const fanOut   = state.depGraph.get(path)?.size ?? 0;
+    const fanIn    = state.revGraph.get(path)?.size ?? 0;
+    const total    = fanIn + fanOut;
+    const smelly   = state.hubModules.find(m => m.path === path);
+    allFiles.push({ path, fanIn, fanOut, total, sev: smelly?.sev ?? null });
   }
+  allFiles.sort((a, b) => b.total - a.total);
 
-  el.innerHTML = '';
-  const maxTotal = state.hubModules[0].total;
+  const maxTotal = allFiles[0]?.total ?? 1;
 
-  state.hubModules.forEach(({ path, fanIn, fanOut, total, sev }, i) => {
-    const label  = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
-    const parts  = path.split('/');
-    const name   = parts.pop();
-    const dir    = parts.join('/') || '/';
-    const inPct  = Math.round((fanIn  / maxTotal) * 100);
-    const outPct = Math.round((fanOut / maxTotal) * 100);
-    const isCycle = state.cycleNodes.has(path);
+  allFiles.forEach((file, i) => {
+    const { path, fanIn, fanOut, total, sev } = file;
+    const isSmelly = !!sev;
+    const parts    = path.split('/');
+    const name     = parts.pop();
+    const dir      = parts.join('/') || '/';
+    const inPct    = Math.round((fanIn  / maxTotal) * 100);
+    const outPct   = Math.round((fanOut / maxTotal) * 100);
+    const isCycle  = state.cycleNodes.has(path);
+
+    const badgeHtml = isSmelly
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      : `<span class="sev-badge sev-normal">—</span>`;
 
     const card = document.createElement('div');
-    card.className = 'smell-card hub-card';
+    card.className = `smell-card hub-card${isSmelly ? '' : ' normal'}`;
     card.title     = path;
     card.innerHTML =
       `<div class="card-head">
-         <span class="sev-badge sev-${sev}">${label}</span>
+         ${badgeHtml}
          <span class="card-title">${name}</span>
          <span class="card-count">${total} conexões</span>
        </div>
        <div class="hub-metrics">
-         <div class="hub-metric">
-           <div class="hub-metric-label"><span class="hub-dir-in">←</span> Fan-in</div>
+         <div class="hub-metric metric-clickable" data-metric="fan-in">
+           <div class="hub-metric-label"><span class="hub-dir-in">←</span> Fan-in <span class="metric-info-btn" aria-label="Saiba mais">i</span></div>
            <div class="hub-bar-wrap"><div class="hub-bar-fill fan-in" style="width:${inPct}%"></div></div>
            <span class="hub-metric-val">${fanIn}</span>
          </div>
-         <div class="hub-metric">
-           <div class="hub-metric-label"><span class="hub-dir-out">→</span> Fan-out</div>
+         <div class="hub-metric metric-clickable" data-metric="fan-out">
+           <div class="hub-metric-label"><span class="hub-dir-out">→</span> Fan-out <span class="metric-info-btn" aria-label="Saiba mais">i</span></div>
            <div class="hub-bar-wrap"><div class="hub-bar-fill fan-out" style="width:${outPct}%"></div></div>
            <span class="hub-metric-val">${fanOut}</span>
          </div>
@@ -120,10 +244,13 @@ function renderHubList() {
        <div class="hub-path-line">${dir}</div>
        ${isCycle ? `<div class="hub-also-cycle" style="font-size:10px;color:var(--red);margin-top:4px">⟳ Também participa de um ciclo</div>` : ''}`;
 
-    card.addEventListener('click', () => {
-      if (state.selectedHubIdx === i) { state.selectedHubIdx = -1; highlightHub(-1); }
-      else highlightHub(i);
-    });
+    if (isSmelly) {
+      const smellyIdx = state.hubModules.findIndex(m => m.path === path);
+      card.addEventListener('click', () => {
+        if (state.selectedHubIdx === smellyIdx) { state.selectedHubIdx = -1; highlightHub(-1); }
+        else highlightHub(smellyIdx);
+      });
+    }
     el.appendChild(card);
   });
 }
@@ -140,52 +267,60 @@ const METRIC_DEFS = [
 
 function renderGodList() {
   const el = document.getElementById('smellList');
+  el.innerHTML = `<div class="threshold-info">
+    Limiar: LOC ≥ <strong>${GOD_LOC_MED}</strong> · funções ≥ <strong>${GOD_FUNC_MED}</strong> · exports ≥ <strong>${GOD_EXP_MED}</strong> · imports ≥ <strong>${GOD_IMP_MIN}</strong>
+  </div>`;
 
-  if (state.godModules.length === 0) {
-    el.innerHTML = `<div class="no-results">
-      <div class="no-results-icon">✅</div>
-      <strong>Nenhum God Component detectado!</strong>
-      <p style="margin-top:8px;font-size:12px">
-        Nenhum módulo concentra responsabilidades excessivas.<br>
-        <span style="font-size:10px;opacity:.7">(Limiares: ≥${GOD_LOC_MED} LOC, ≥${GOD_FUNC_MED} funções, ≥${GOD_EXP_MED} exports)</span>
-      </p>
-    </div>`;
-    return;
+  // Build metrics for ALL files
+  const allFiles = [];
+  for (const [path, content] of state.fileMap) {
+    const smelly = state.godModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly, isSmelly: true });
+    } else {
+      const { loc, funcCount, exportCount } = computeGodMetrics(content);
+      const importCount = state.depGraph.get(path)?.size ?? 0;
+      const { score, flags } = computeGodScore(loc, funcCount, exportCount, importCount);
+      allFiles.push({ path, loc, funcCount, exportCount, importCount, score, sev: null, flags, isSmelly: false });
+    }
   }
+  allFiles.sort((a, b) => b.score - a.score || b.loc - a.loc);
 
-  el.innerHTML = '';
-
-  state.godModules.forEach((mod, i) => {
-    const { path, sev, score, flags } = mod;
-    const label   = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
+  allFiles.forEach(mod => {
+    const { path, sev, score, flags, isSmelly } = mod;
     const parts   = path.split('/');
     const name    = parts.pop();
     const dir     = parts.join('/') || '/';
     const isCycle = state.cycleNodes.has(path);
     const isHub   = state.hubNodePaths.has(path);
 
+    const badgeHtml = isSmelly
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      : `<span class="sev-badge sev-normal">—</span>`;
+
     const metricsHtml = METRIC_DEFS.map(def => {
       const val        = def.getter(mod);
-      const triggered  = !!flags[def.key];
+      const triggered  = isSmelly && !!flags[def.key];
       const levelLabel = flags[def.key] === 'high' ? ' ⚠' : '';
-      return `<div class="god-metric ${triggered ? 'triggered' : ''}">
+      return `<div class="god-metric metric-clickable ${triggered ? 'triggered' : ''}" data-metric="${def.key}">
         <span class="god-metric-icon">${def.icon}</span>
         <span class="god-metric-label">${def.label}</span>
         <span class="god-metric-val">${val}${levelLabel}</span>
+        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
       </div>`;
     }).join('');
 
     const alsoTags = [
       isCycle ? `<span class="god-also-tag cycle">⟳ Em ciclo</span>` : '',
-      isHub   ? `<span class="god-also-tag hub">◎ É hub</span>`   : '',
+      isHub   ? `<span class="god-also-tag hub">◎ É hub</span>`      : '',
     ].filter(Boolean).join('');
 
     const card = document.createElement('div');
-    card.className = 'smell-card god-card';
+    card.className = `smell-card god-card${isSmelly ? '' : ' normal'}`;
     card.title     = path;
     card.innerHTML =
       `<div class="card-head">
-         <span class="sev-badge sev-${sev}">${label}</span>
+         ${badgeHtml}
          <span class="card-title">${name}</span>
          <span class="card-count">score ${score}</span>
        </div>
@@ -193,10 +328,13 @@ function renderGodList() {
        <div class="god-path-line">${dir}</div>
        ${alsoTags ? `<div class="god-also">${alsoTags}</div>` : ''}`;
 
-    card.addEventListener('click', () => {
-      if (state.selectedGodIdx === i) { state.selectedGodIdx = -1; highlightGod(-1); }
-      else highlightGod(i);
-    });
+    if (isSmelly) {
+      const smellyIdx = state.godModules.findIndex(m => m.path === path);
+      card.addEventListener('click', () => {
+        if (state.selectedGodIdx === smellyIdx) { state.selectedGodIdx = -1; highlightGod(-1); }
+        else highlightGod(smellyIdx);
+      });
+    }
     el.appendChild(card);
   });
 }
@@ -211,24 +349,26 @@ const CHATTY_METRIC_DEFS = [
 
 function renderChattyList() {
   const el = document.getElementById('smellList');
+  el.innerHTML = `<div class="threshold-info">
+    Limiar: símbolos totais ≥ <strong>${CHATTY_NAMED_MED}</strong> · ou máx. de uma dep ≥ <strong>${CHATTY_MAX_MED}</strong>
+  </div>`;
 
-  if (state.chattyModules.length === 0) {
-    el.innerHTML = `<div class="no-results">
-      <div class="no-results-icon">✅</div>
-      <strong>Nenhum Chatty Component detectado!</strong>
-      <p style="margin-top:8px;font-size:12px">
-        Nenhum módulo importa um volume excessivo de símbolos externos.<br>
-        <span style="font-size:10px;opacity:.7">(Limiar: ≥${CHATTY_NAMED_MED} símbolos totais ou ≥${CHATTY_MAX_MED} de uma dep.)</span>
-      </p>
-    </div>`;
-    return;
+  // Build metrics for ALL files
+  const allFiles = [];
+  for (const [path, content] of state.fileMap) {
+    const smelly = state.chattyModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly, isSmelly: true });
+    } else {
+      const { namedImports, maxFromOne, topDep } = computeChattyMetrics(content);
+      const { score, flags } = computeChattyScore(namedImports, maxFromOne);
+      allFiles.push({ path, namedImports, maxFromOne, topDep, score, sev: null, flags, isSmelly: false });
+    }
   }
+  allFiles.sort((a, b) => b.score - a.score || b.namedImports - a.namedImports);
 
-  el.innerHTML = '';
-
-  state.chattyModules.forEach((mod, i) => {
-    const { path, sev, score, flags, topDep } = mod;
-    const label   = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
+  allFiles.forEach(mod => {
+    const { path, sev, score, flags, topDep, isSmelly } = mod;
     const parts   = path.split('/');
     const name    = parts.pop();
     const dir     = parts.join('/') || '/';
@@ -236,18 +376,22 @@ function renderChattyList() {
     const isHub   = state.hubNodePaths.has(path);
     const isGod   = state.godNodePaths.has(path);
 
+    const badgeHtml = isSmelly
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      : `<span class="sev-badge sev-normal">—</span>`;
+
     const metricsHtml = CHATTY_METRIC_DEFS.map(def => {
       const val        = def.getter(mod);
-      const triggered  = !!flags[def.key];
+      const triggered  = isSmelly && !!flags[def.key];
       const levelLabel = flags[def.key] === 'high' ? ' ⚠' : '';
-      return `<div class="chatty-metric ${triggered ? 'triggered' : ''}">
+      return `<div class="chatty-metric metric-clickable ${triggered ? 'triggered' : ''}" data-metric="${def.key}">
         <span class="chatty-metric-icon">${def.icon}</span>
         <span class="chatty-metric-label">${def.label}</span>
         <span class="chatty-metric-val">${val}${levelLabel}</span>
+        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
       </div>`;
     }).join('');
 
-    // Show which dependency contributes the most symbols
     const topDepShort = topDep
       ? topDep.split('/').pop().replace(/\.[jt]sx?$/, '')
       : '—';
@@ -256,17 +400,17 @@ function renderChattyList() {
       : '';
 
     const alsoTags = [
-      isCycle ? `<span class="chatty-also-tag cycle">⟳ Em ciclo</span>` : '',
-      isHub   ? `<span class="chatty-also-tag hub">◎ É hub</span>`    : '',
-      isGod   ? `<span class="chatty-also-tag god">⊕ God component</span>` : '',
+      isCycle ? `<span class="chatty-also-tag cycle">⟳ Em ciclo</span>`     : '',
+      isHub   ? `<span class="chatty-also-tag hub">◎ É hub</span>`          : '',
+      isGod   ? `<span class="chatty-also-tag god">⊕ God component</span>`  : '',
     ].filter(Boolean).join('');
 
     const card = document.createElement('div');
-    card.className = 'smell-card chatty-card';
+    card.className = `smell-card chatty-card${isSmelly ? '' : ' normal'}`;
     card.title     = path;
     card.innerHTML =
       `<div class="card-head">
-         <span class="sev-badge sev-${sev}">${label}</span>
+         ${badgeHtml}
          <span class="card-title">${name}</span>
          <span class="card-count">score ${score}</span>
        </div>
@@ -275,10 +419,13 @@ function renderChattyList() {
        <div class="chatty-path-line">${dir}</div>
        ${alsoTags ? `<div class="chatty-also">${alsoTags}</div>` : ''}`;
 
-    card.addEventListener('click', () => {
-      if (state.selectedChattyIdx === i) { state.selectedChattyIdx = -1; highlightChatty(-1); }
-      else highlightChatty(i);
-    });
+    if (isSmelly) {
+      const smellyIdx = state.chattyModules.findIndex(m => m.path === path);
+      card.addEventListener('click', () => {
+        if (state.selectedChattyIdx === smellyIdx) { state.selectedChattyIdx = -1; highlightChatty(-1); }
+        else highlightChatty(smellyIdx);
+      });
+    }
     el.appendChild(card);
   });
 }
@@ -306,35 +453,44 @@ function renderHotspotList() {
     return;
   }
 
-  if (state.hotspotModules.length === 0) {
-    el.innerHTML = `<div class="no-results">
-      <div class="no-results-icon">✅</div>
-      <strong>Nenhum Hotspot detectado!</strong>
-      <p style="margin-top:8px;font-size:12px">
-        Nenhum arquivo combina alta frequência de mudanças com grande tamanho.<br>
-        <span style="font-size:10px;opacity:.7">(Limiar: ≥${HOTSPOT_FREQ_MED} commits e ≥${HOTSPOT_LOC_MED} LOC)</span>
-      </p>
-    </div>`;
-    return;
+  el.innerHTML = `<div class="threshold-info">
+    Limiar: commits ≥ <strong>${HOTSPOT_FREQ_MED}</strong> · LOC ≥ <strong>${HOTSPOT_LOC_MED}</strong> (ambos devem ser atingidos)
+  </div>`;
+
+  // Build metrics for ALL files that appear in commits.txt
+  const allFiles = [];
+  for (const [path, commitInfo] of state.commitData) {
+    const smelly = state.hotspotModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly, isSmelly: true });
+    } else {
+      const content = state.fileMap.get(path) ?? '';
+      const { loc }  = computeGodMetrics(content);
+      const { commitCount, linesChanged } = commitInfo;
+      allFiles.push({ path, commitCount, linesChanged, loc, score: 0, sev: null, flags: {}, isSmelly: false });
+    }
   }
+  allFiles.sort((a, b) => b.score - a.score || b.commitCount - a.commitCount);
 
-  el.innerHTML = '';
-
-  state.hotspotModules.forEach((mod, i) => {
-    const { path, sev, score, flags, linesChanged } = mod;
-    const label  = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
+  allFiles.forEach(mod => {
+    const { path, sev, score, flags, linesChanged, isSmelly } = mod;
     const parts  = path.split('/');
     const name   = parts.pop();
     const dir    = parts.join('/') || '/';
 
+    const badgeHtml = isSmelly
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      : `<span class="sev-badge sev-normal">—</span>`;
+
     const metricsHtml = HOTSPOT_METRIC_DEFS.map(def => {
       const val        = def.getter(mod);
-      const triggered  = !!flags[def.key];
+      const triggered  = isSmelly && !!flags[def.key];
       const levelLabel = flags[def.key] === 'high' ? ' ⚠' : '';
-      return `<div class="hotspot-metric ${triggered ? 'triggered' : ''}">
+      return `<div class="hotspot-metric metric-clickable ${triggered ? 'triggered' : ''}" data-metric="${def.key}">
         <span class="hotspot-metric-icon">${def.icon}</span>
         <span class="hotspot-metric-label">${def.label}</span>
         <span class="hotspot-metric-val">${val}${levelLabel}</span>
+        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
       </div>`;
     }).join('');
 
@@ -342,17 +498,17 @@ function renderHotspotList() {
     const isHub   = state.hubNodePaths.has(path);
     const isGod   = state.godNodePaths.has(path);
     const alsoTags = [
-      isCycle ? `<span class="hotspot-also-tag cycle">⟳ Em ciclo</span>`        : '',
-      isHub   ? `<span class="hotspot-also-tag hub">◎ É hub</span>`             : '',
-      isGod   ? `<span class="hotspot-also-tag god">⊕ God component</span>`     : '',
+      isCycle ? `<span class="hotspot-also-tag cycle">⟳ Em ciclo</span>`    : '',
+      isHub   ? `<span class="hotspot-also-tag hub">◎ É hub</span>`         : '',
+      isGod   ? `<span class="hotspot-also-tag god">⊕ God component</span>` : '',
     ].filter(Boolean).join('');
 
     const card = document.createElement('div');
-    card.className = 'smell-card hotspot-card';
+    card.className = `smell-card hotspot-card${isSmelly ? '' : ' normal'}`;
     card.title     = path;
     card.innerHTML =
       `<div class="card-head">
-         <span class="sev-badge sev-${sev}">${label}</span>
+         ${badgeHtml}
          <span class="card-title">${name}</span>
          <span class="card-count">score ${score}</span>
        </div>
@@ -361,10 +517,13 @@ function renderHotspotList() {
        <div class="hotspot-path-line">${dir}</div>
        ${alsoTags ? `<div class="hotspot-also">${alsoTags}</div>` : ''}`;
 
-    card.addEventListener('click', () => {
-      if (state.selectedHotspotIdx === i) { state.selectedHotspotIdx = -1; highlightHotspot(-1); }
-      else highlightHotspot(i);
-    });
+    if (isSmelly) {
+      const smellyIdx = state.hotspotModules.findIndex(m => m.path === path);
+      card.addEventListener('click', () => {
+        if (state.selectedHotspotIdx === smellyIdx) { state.selectedHotspotIdx = -1; highlightHotspot(-1); }
+        else highlightHotspot(smellyIdx);
+      });
+    }
     el.appendChild(card);
   });
 }
@@ -393,35 +552,47 @@ function renderArchList() {
     return;
   }
 
-  if (state.archHotspotModules.length === 0) {
-    el.innerHTML = `<div class="no-results">
-      <div class="no-results-icon">✅</div>
-      <strong>Nenhum Architectural Hotspot detectado!</strong>
-      <p style="margin-top:8px;font-size:12px">
-        Nenhum arquivo combina frequência de mudanças, centralidade de dependências e tamanho.<br>
-        <span style="font-size:10px;opacity:.7">(Limiar: ≥${HOTSPOT_FREQ_MED} commits, ≥${ARCH_CENTRALITY_MED} centralidade ou ≥${HOTSPOT_LOC_MED} LOC)</span>
-      </p>
-    </div>`;
-    return;
+  el.innerHTML = `<div class="threshold-info">
+    Limiar: commits ≥ <strong>${HOTSPOT_FREQ_MED}</strong> · centralidade ≥ <strong>${ARCH_CENTRALITY_MED}</strong> · LOC ≥ <strong>${HOTSPOT_LOC_MED}</strong>
+  </div>`;
+
+  // Build metrics for ALL files that appear in commits.txt
+  const allFiles = [];
+  for (const [path, commitInfo] of state.commitData) {
+    const smelly = state.archHotspotModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly, isSmelly: true });
+    } else {
+      const content    = state.fileMap.get(path) ?? '';
+      const { loc }    = computeGodMetrics(content);
+      const fanIn      = state.revGraph.get(path)?.size ?? 0;
+      const fanOut     = state.depGraph.get(path)?.size ?? 0;
+      const centrality = fanIn + fanOut;
+      const { commitCount } = commitInfo;
+      allFiles.push({ path, commitCount, loc, centrality, fanIn, fanOut, score: 0, sev: null, flags: {}, isSmelly: false });
+    }
   }
+  allFiles.sort((a, b) => b.score - a.score || b.commitCount - a.commitCount);
 
-  el.innerHTML = '';
-
-  state.archHotspotModules.forEach((mod, i) => {
-    const { path, sev, score, flags, fanIn, fanOut } = mod;
-    const label  = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
+  allFiles.forEach(mod => {
+    const { path, sev, score, flags, fanIn, fanOut, isSmelly } = mod;
     const parts  = path.split('/');
     const name   = parts.pop();
     const dir    = parts.join('/') || '/';
 
+    const badgeHtml = isSmelly
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      : `<span class="sev-badge sev-normal">—</span>`;
+
     const metricsHtml = ARCH_METRIC_DEFS.map(def => {
       const val        = def.getter(mod);
-      const triggered  = !!flags[def.key];
+      const triggered  = isSmelly && !!flags[def.key];
       const levelLabel = flags[def.key] === 'high' ? ' ⚠' : '';
-      return `<div class="arch-metric ${triggered ? 'triggered' : ''}">
+      return `<div class="arch-metric metric-clickable ${triggered ? 'triggered' : ''}" data-metric="${def.key}">
         <span class="arch-metric-icon">${def.icon}</span>
         <span class="arch-metric-label">${def.label}</span>
         <span class="arch-metric-val">${val}${levelLabel}</span>
+        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
       </div>`;
     }).join('');
 
@@ -435,15 +606,15 @@ function renderArchList() {
     const isHub   = state.hubNodePaths.has(path);
     const alsoTags = [
       isCycle ? `<span class="arch-also-tag cycle">⟳ Em ciclo</span>` : '',
-      isHub   ? `<span class="arch-also-tag hub">◎ É hub</span>`     : '',
+      isHub   ? `<span class="arch-also-tag hub">◎ É hub</span>`      : '',
     ].filter(Boolean).join('');
 
     const card = document.createElement('div');
-    card.className = 'smell-card arch-card';
+    card.className = `smell-card arch-card${isSmelly ? '' : ' normal'}`;
     card.title     = path;
     card.innerHTML =
       `<div class="card-head">
-         <span class="sev-badge sev-${sev}">${label}</span>
+         ${badgeHtml}
          <span class="card-title">${name}</span>
          <span class="card-count">score ${score}</span>
        </div>
@@ -452,10 +623,13 @@ function renderArchList() {
        <div class="arch-path-line">${dir}</div>
        ${alsoTags ? `<div class="arch-also">${alsoTags}</div>` : ''}`;
 
-    card.addEventListener('click', () => {
-      if (state.selectedArchIdx === i) { state.selectedArchIdx = -1; highlightArch(-1); }
-      else highlightArch(i);
-    });
+    if (isSmelly) {
+      const smellyIdx = state.archHotspotModules.findIndex(m => m.path === path);
+      card.addEventListener('click', () => {
+        if (state.selectedArchIdx === smellyIdx) { state.selectedArchIdx = -1; highlightArch(-1); }
+        else highlightArch(smellyIdx);
+      });
+    }
     el.appendChild(card);
   });
 }
@@ -504,15 +678,23 @@ function renderCycleTable() {
 
 function renderHubTable() {
   const el = document.getElementById('smellList');
-  if (!state.hubModules.length) { el.classList.remove('table-mode'); renderHubList(); return; }
 
-  const rows = state.hubModules.map((m, i) =>
-    `<tr class="smell-row" data-idx="${i}" title="${m.path}">
+  const allFiles = [];
+  for (const [path] of state.fileMap) {
+    const fanOut = state.depGraph.get(path)?.size ?? 0;
+    const fanIn  = state.revGraph.get(path)?.size ?? 0;
+    const smelly = state.hubModules.find(m => m.path === path);
+    allFiles.push({ path, fanIn, fanOut, total: fanIn + fanOut, sev: smelly?.sev ?? null });
+  }
+  allFiles.sort((a, b) => b.total - a.total);
+
+  const rows = allFiles.map((m, i) =>
+    `<tr class="smell-row${m.sev ? '' : ' row-normal'}" data-idx="${i}" title="${m.path}">
       <td class="td-file">${m.path.split('/').pop()}</td>
       <td class="td-val">${m.fanIn}</td>
       <td class="td-val">${m.fanOut}</td>
       <td class="td-val">${m.total}</td>
-      <td class="td-sev"><span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span></td>
+      <td class="td-sev">${m.sev ? `<span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span>` : `<span class="sev-badge sev-normal">—</span>`}</td>
     </tr>`
   ).join('');
 
@@ -527,16 +709,29 @@ function renderHubTable() {
 
 function renderGodTable() {
   const el = document.getElementById('smellList');
-  if (!state.godModules.length) { el.classList.remove('table-mode'); renderGodList(); return; }
 
-  const rows = state.godModules.map((m, i) =>
-    `<tr class="smell-row" data-idx="${i}" title="${m.path}">
+  const allFiles = [];
+  for (const [path, content] of state.fileMap) {
+    const smelly = state.godModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly });
+    } else {
+      const { loc, funcCount, exportCount } = computeGodMetrics(content);
+      const importCount = state.depGraph.get(path)?.size ?? 0;
+      const { score }   = computeGodScore(loc, funcCount, exportCount, importCount);
+      allFiles.push({ path, loc, funcCount, exportCount, importCount, score, sev: null });
+    }
+  }
+  allFiles.sort((a, b) => b.score - a.score || b.loc - a.loc);
+
+  const rows = allFiles.map((m, i) =>
+    `<tr class="smell-row${m.sev ? '' : ' row-normal'}" data-idx="${i}" title="${m.path}">
       <td class="td-file">${m.path.split('/').pop()}</td>
       <td class="td-val">${m.loc}</td>
       <td class="td-val">${m.funcCount}</td>
       <td class="td-val">${m.exportCount}</td>
       <td class="td-val">${m.score}</td>
-      <td class="td-sev"><span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span></td>
+      <td class="td-sev">${m.sev ? `<span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span>` : `<span class="sev-badge sev-normal">—</span>`}</td>
     </tr>`
   ).join('');
 
@@ -552,15 +747,27 @@ function renderGodTable() {
 
 function renderChattyTable() {
   const el = document.getElementById('smellList');
-  if (!state.chattyModules.length) { el.classList.remove('table-mode'); renderChattyList(); return; }
 
-  const rows = state.chattyModules.map((m, i) =>
-    `<tr class="smell-row" data-idx="${i}" title="${m.path}">
+  const allFiles = [];
+  for (const [path, content] of state.fileMap) {
+    const smelly = state.chattyModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly });
+    } else {
+      const { namedImports, maxFromOne } = computeChattyMetrics(content);
+      const { score } = computeChattyScore(namedImports, maxFromOne);
+      allFiles.push({ path, namedImports, maxFromOne, score, sev: null });
+    }
+  }
+  allFiles.sort((a, b) => b.score - a.score || b.namedImports - a.namedImports);
+
+  const rows = allFiles.map((m, i) =>
+    `<tr class="smell-row${m.sev ? '' : ' row-normal'}" data-idx="${i}" title="${m.path}">
       <td class="td-file">${m.path.split('/').pop()}</td>
       <td class="td-val">${m.namedImports}</td>
       <td class="td-val">${m.maxFromOne}</td>
       <td class="td-val">${m.score}</td>
-      <td class="td-sev"><span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span></td>
+      <td class="td-sev">${m.sev ? `<span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span>` : `<span class="sev-badge sev-normal">—</span>`}</td>
     </tr>`
   ).join('');
 
@@ -575,15 +782,28 @@ function renderChattyTable() {
 
 function renderHotspotTable() {
   const el = document.getElementById('smellList');
-  if (!state.hasCommits || !state.hotspotModules.length) { el.classList.remove('table-mode'); renderHotspotList(); return; }
+  if (!state.hasCommits) { el.classList.remove('table-mode'); renderHotspotList(); return; }
 
-  const rows = state.hotspotModules.map((m, i) =>
-    `<tr class="smell-row" data-idx="${i}" title="${m.path}">
+  const allFiles = [];
+  for (const [path, commitInfo] of state.commitData) {
+    const smelly = state.hotspotModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly });
+    } else {
+      const content = state.fileMap.get(path) ?? '';
+      const { loc } = computeGodMetrics(content);
+      allFiles.push({ path, commitCount: commitInfo.commitCount, loc, score: 0, sev: null });
+    }
+  }
+  allFiles.sort((a, b) => b.score - a.score || b.commitCount - a.commitCount);
+
+  const rows = allFiles.map((m, i) =>
+    `<tr class="smell-row${m.sev ? '' : ' row-normal'}" data-idx="${i}" title="${m.path}">
       <td class="td-file">${m.path.split('/').pop()}</td>
       <td class="td-val">${m.commitCount}</td>
       <td class="td-val">${m.loc}</td>
       <td class="td-val">${m.score}</td>
-      <td class="td-sev"><span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span></td>
+      <td class="td-sev">${m.sev ? `<span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span>` : `<span class="sev-badge sev-normal">—</span>`}</td>
     </tr>`
   ).join('');
 
@@ -598,25 +818,40 @@ function renderHotspotTable() {
 
 function renderArchTable() {
   const el = document.getElementById('smellList');
-  if (!state.hasCommits || !state.archHotspotModules.length) { el.classList.remove('table-mode'); renderArchList(); return; }
+  if (!state.hasCommits) { el.classList.remove('table-mode'); renderArchList(); return; }
 
-  const rows = state.archHotspotModules.map((m, i) =>
-    `<tr class="smell-row" data-idx="${i}" title="${m.path}">
+  const allFiles = [];
+  for (const [path, commitInfo] of state.commitData) {
+    const smelly = state.archHotspotModules.find(m => m.path === path);
+    if (smelly) {
+      allFiles.push({ ...smelly });
+    } else {
+      const content    = state.fileMap.get(path) ?? '';
+      const { loc }    = computeGodMetrics(content);
+      const fanIn      = state.revGraph.get(path)?.size ?? 0;
+      const fanOut     = state.depGraph.get(path)?.size ?? 0;
+      allFiles.push({ path, commitCount: commitInfo.commitCount, centrality: fanIn + fanOut, loc, score: 0, sev: null });
+    }
+  }
+  allFiles.sort((a, b) => b.score - a.score || b.commitCount - a.commitCount);
+
+  const rows = allFiles.map((m, i) =>
+    `<tr class="smell-row${m.sev ? '' : ' row-normal'}" data-idx="${i}" title="${m.path}">
       <td class="td-file">${m.path.split('/').pop()}</td>
       <td class="td-val">${m.commitCount}</td>
       <td class="td-val">${m.centrality}</td>
       <td class="td-val">${m.loc}</td>
       <td class="td-val">${m.score}</td>
-      <td class="td-sev"><span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span></td>
+      <td class="td-sev">${m.sev ? `<span class="sev-badge sev-${m.sev}">${SEV_LABEL[m.sev]}</span>` : `<span class="sev-badge sev-normal">—</span>`}</td>
     </tr>`
   ).join('');
 
   buildTable(el, [
     { label: 'Arquivo' },
-    { label: 'Commits',   r: true, w: '54px' },
-    { label: 'Central.',  r: true, w: '54px' },
-    { label: 'LOC',       r: true, w: '42px' },
-    { label: 'Score',     r: true, w: '44px' },
+    { label: 'Commits',  r: true, w: '54px' },
+    { label: 'Central.', r: true, w: '54px' },
+    { label: 'LOC',      r: true, w: '42px' },
+    { label: 'Score',    r: true, w: '44px' },
     { label: 'Sev', w: '60px' },
   ], rows);
 }
@@ -804,21 +1039,21 @@ function renderReport() {
   const totalMed    = rows.reduce((a, r) => a + r.sevs.medium, 0);
   const totalLow    = rows.reduce((a, r) => a + r.sevs.low,    0);
 
-  const naCol  = `<td class="rpt-na" colspan="3">requer commits.txt</td>`;
-
   const bodyRows = rows.map(r => {
     const na = r.total === null;
-    const sevCols = na ? naCol :
-      `<td class="rpt-num rpt-high">${r.sevs.high   || '–'}</td>
-       <td class="rpt-num rpt-med" >${r.sevs.medium || '–'}</td>
-       <td class="rpt-num rpt-low" >${r.sevs.low    || '–'}</td>`;
-    const totalCell = na ? '–' : (r.total || '–');
-    const filesCell = na ? '–' : (r.files || '–');
+    if (na) {
+      return `<tr>
+      <td class="rpt-smell"><span class="rpt-dot rpt-dot-${r.color}"></span>${r.icon} ${r.label}</td>
+      <td class="rpt-na" colspan="5">git log não encontrado</td>
+    </tr>`;
+    }
     return `<tr>
       <td class="rpt-smell"><span class="rpt-dot rpt-dot-${r.color}"></span>${r.icon} ${r.label}</td>
-      <td class="rpt-num rpt-total">${totalCell}</td>
-      ${sevCols}
-      <td class="rpt-num">${filesCell}</td>
+      <td class="rpt-num rpt-total">${r.total || '–'}</td>
+      <td class="rpt-num rpt-high">${r.sevs.high   || '–'}</td>
+      <td class="rpt-num rpt-med" >${r.sevs.medium || '–'}</td>
+      <td class="rpt-num rpt-low" >${r.sevs.low    || '–'}</td>
+      <td class="rpt-num">${r.files || '–'}</td>
     </tr>`;
   }).join('');
 
@@ -920,19 +1155,31 @@ function buildReportLatex() {
 
   const bodyRows = rows.map(r => {
     if (r.total === null) {
-      return `${escape(r.label)} & -- & \\multicolumn{3}{c|}{requer commits.txt} & -- \\\\`;
+      return `${escape(r.label)} & -- & \\multicolumn{3}{c|}{git log n\\~{a}o encontrado} & -- \\\\`;
     }
     const sev = { high: 0, medium: 0, low: 0 };
     r.modules.forEach(m => { sev[sevOf(m, r.cyclic)]++; });
     return `${escape(r.label)} & ${r.total || '--'} & ${sev.high || '--'} & ${sev.medium || '--'} & ${sev.low || '--'} & ${r.files || '--'} \\\\`;
   }).join('\n');
 
+  const depCount = Array.from(s.depGraph.values()).reduce((a, v) => a + v.size, 0);
+  const commitsLine = has
+    ? '% commits.txt: sim'
+    : '% commits.txt: n\\~{a}o (execute: git log --pretty=format:"\\%H \\%ai \\%an" --numstat > commits.txt)';
+
+  const footerRow =
+    `\\multicolumn{3}{l|}{\\small Arquivos analisados: ${s.fileMap.size}} & ` +
+    `\\multicolumn{3}{r}{\\small Depend\\^{e}ncias: ${depCount}} \\\\`;
+
   return [
+    commitsLine,
     '\\begin{tabular}{l|r|r|r|r|r}',
     '\\hline',
     '\\textbf{Smell} & \\textbf{Total} & \\textbf{Alto} & \\textbf{M\\\'edio} & \\textbf{Baixo} & \\textbf{Arquivos} \\\\',
     '\\hline',
     bodyRows,
+    '\\hline',
+    footerRow,
     '\\hline',
     '\\end{tabular}',
   ].join('\n');
@@ -993,6 +1240,26 @@ const dz = document.getElementById('dropzone');
 dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
 dz.addEventListener('dragleave', ()  => dz.classList.remove('over'));
 dz.addEventListener('drop',      e  => { e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+
+// Metric info modal — event delegation on smellList
+document.getElementById('smellList').addEventListener('click', e => {
+  const cell = e.target.closest('[data-metric]');
+  if (cell) { e.stopPropagation(); openMetricModal(cell.dataset.metric); }
+});
+
+// Metric info modal — stat cards (e.g. Dependências)
+document.querySelector('.stats-bar').addEventListener('click', e => {
+  const card = e.target.closest('[data-metric]');
+  if (card) openMetricModal(card.dataset.metric);
+});
+document.getElementById('btnMiClose').addEventListener('click', closeMetricModal);
+document.getElementById('metricInfoModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('metricInfoModal')) closeMetricModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('metricInfoModal').style.display !== 'none')
+    closeMetricModal();
+});
 
 // Report button
 document.getElementById('btnReport').addEventListener('click', renderReport);

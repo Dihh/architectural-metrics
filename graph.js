@@ -501,46 +501,123 @@ export function highlightGod(idx) {
 const tipEl = document.getElementById('tooltip');
 
 function showTip(event, d) {
-  const parts  = d.id.split('/');
-  const name   = parts.pop();
-  const dir    = parts.join('/') || '/';
+  const parts = d.id.split('/');
+  const name  = parts.pop();
+  const dir   = parts.join('/') || '/';
 
-  const inCycles = state.cyclicSCCs
-    .map((scc, i) => scc.includes(d.id) ? `Ciclo #${i + 1}` : null)
-    .filter(Boolean).join(', ');
+  // Smell-specific primary metrics block
+  const smell = state.currentSmell;
 
-  const hubInfo = state.hubNodePaths.has(d.id)
-    ? `<div class="tt-hub">◎ Hub: ${d.inp} entradas · ${d.out} saídas</div>` : '';
+  let primaryMetrics = '';
+  if (smell === 'cyclic') {
+    const inCycles = state.cyclicSCCs
+      .map((scc, i) => scc.includes(d.id) ? `Ciclo #${i + 1}` : null)
+      .filter(Boolean).join(', ');
+    primaryMetrics =
+      `Fan-out (importa): ${d.out}<br>Fan-in (importado por): ${d.inp}` +
+      (inCycles ? `<br>Ciclos: ${inCycles}` : '');
 
-  const godInfo = (() => {
-    const gm = state.godModules.find(g => g.path === d.id);
-    return gm ? `<div class="tt-god">⊕ God Component: ${gm.loc} LOC · score ${gm.score}</div>` : '';
-  })();
+  } else if (smell === 'hub') {
+    // hub metrics are always derivable from the graphs
+    const total = d.inp + d.out;
+    const hm    = state.hubModules.find(m => m.path === d.id);
+    primaryMetrics =
+      `Fan-in (importado por): ${d.inp}<br>
+       Fan-out (importa): ${d.out}<br>
+       Total conexões: ${total}` +
+      (hm ? `<br>Severidade: ${hm.sev}` : '');
 
-  const chattyInfo = (() => {
-    const cm = state.chattyModules.find(c => c.path === d.id);
-    return cm ? `<div class="tt-chatty">⇄ Chatty: ${cm.namedImports} símbolos · score ${cm.score}</div>` : '';
-  })();
+  } else if (smell === 'god') {
+    // use the full map so ALL nodes show god metrics
+    const gm = state.godMetricsMap.get(d.id);
+    if (gm) {
+      const smelly = state.godNodePaths.has(d.id)
+        ? state.godModules.find(m => m.path === d.id) : null;
+      primaryMetrics =
+        `LOC: ${gm.loc}<br>
+         Funções: ${gm.funcCount}<br>
+         Exports: ${gm.exportCount}<br>
+         Fan-out (importa): ${gm.importCount}<br>
+         Score: ${gm.score}` +
+        (smelly ? ` · Severidade: ${smelly.sev}` : '');
+    } else {
+      primaryMetrics = `Fan-out (importa): ${d.out}<br>Fan-in (importado por): ${d.inp}`;
+    }
 
-  const hotspotInfo = (() => {
-    const hm = state.hotspotModules.find(h => h.path === d.id);
-    return hm ? `<div class="tt-hotspot">🔥 Hotspot: ${hm.commitCount} commits · ${hm.loc} LOC</div>` : '';
-  })();
+  } else if (smell === 'chatty') {
+    // use the full map so ALL nodes show chatty metrics
+    const cm = state.chattyMetricsMap.get(d.id);
+    if (cm) {
+      const topDepName = cm.topDep ? cm.topDep.split('/').pop() : '—';
+      const smelly = state.chattyNodePaths.has(d.id)
+        ? state.chattyModules.find(m => m.path === d.id) : null;
+      primaryMetrics =
+        `Símbolos importados: ${cm.namedImports}<br>
+         Máx. de uma dep: ${cm.maxFromOne}${cm.topDep ? ` (${topDepName})` : ''}<br>
+         Score: ${cm.score}` +
+        (smelly ? ` · Severidade: ${smelly.sev}` : '');
+    } else {
+      primaryMetrics = `Fan-out (importa): ${d.out}<br>Fan-in (importado por): ${d.inp}`;
+    }
 
-  const archInfo = (() => {
-    const am = state.archHotspotModules.find(a => a.path === d.id);
-    return am ? `<div class="tt-arch">⬡ Arch Hotspot: score ${am.score} · centralidade ${am.centrality}</div>` : '';
-  })();
+  } else if (smell === 'hotspot') {
+    const hm = state.hotspotModules.find(m => m.path === d.id);
+    const cd = state.commitData.get(d.id);
+    if (cd) {
+      primaryMetrics =
+        `Commits: ${cd.commitCount}<br>
+         Linhas alteradas: ${cd.linesChanged}` +
+        (hm ? `<br>LOC: ${hm.loc}<br>Score: ${hm.score} · Severidade: ${hm.sev}` : '');
+    } else {
+      primaryMetrics = `Commits: — (não encontrado em commits.txt)<br>Fan-out: ${d.out} · Fan-in: ${d.inp}`;
+    }
+
+  } else if (smell === 'arch') {
+    const am = state.archHotspotModules.find(m => m.path === d.id);
+    const cd = state.commitData.get(d.id);
+    const total = d.inp + d.out;
+    if (cd) {
+      primaryMetrics =
+        `Commits: ${cd.commitCount}<br>
+         Centralidade: ${total} (in: ${d.inp} · out: ${d.out})` +
+        (am ? `<br>LOC: ${am.loc}<br>Score: ${am.score} · Severidade: ${am.sev}` : '');
+    } else {
+      primaryMetrics = `Commits: — (não encontrado em commits.txt)<br>Centralidade: ${total} (in: ${d.inp} · out: ${d.out})`;
+    }
+  }
+
+  // Secondary smell badges (only for smells OTHER than the active one)
+  const badges = [];
+  if (smell !== 'cyclic') {
+    const inCycles = state.cyclicSCCs
+      .map((scc, i) => scc.includes(d.id) ? `Ciclo #${i + 1}` : null)
+      .filter(Boolean).join(', ');
+    if (inCycles) badges.push(`<div class="tt-cycle">⟳ ${inCycles}</div>`);
+  }
+  if (smell !== 'hub' && state.hubNodePaths.has(d.id)) {
+    badges.push(`<div class="tt-hub">◎ Hub: ${d.inp} entradas · ${d.out} saídas</div>`);
+  }
+  if (smell !== 'god') {
+    const gm = state.godModules.find(m => m.path === d.id);
+    if (gm) badges.push(`<div class="tt-god">⊕ God: ${gm.loc} LOC · score ${gm.score}</div>`);
+  }
+  if (smell !== 'chatty') {
+    const cm = state.chattyModules.find(m => m.path === d.id);
+    if (cm) badges.push(`<div class="tt-chatty">⇄ Chatty: ${cm.namedImports} símbolos · score ${cm.score}</div>`);
+  }
+  if (smell !== 'hotspot') {
+    const hm = state.hotspotModules.find(m => m.path === d.id);
+    if (hm) badges.push(`<div class="tt-hotspot">🔥 Hotspot: ${hm.commitCount} commits · ${hm.loc} LOC</div>`);
+  }
+  if (smell !== 'arch') {
+    const am = state.archHotspotModules.find(m => m.path === d.id);
+    if (am) badges.push(`<div class="tt-arch">⬡ Arch: score ${am.score} · centralidade ${am.centrality}</div>`);
+  }
 
   tipEl.innerHTML =
     `<div class="tt-name">${name}</div>
-     <div class="tt-info">
-       Pasta: ${dir}<br>
-       Fan-out (importa): ${d.out}<br>
-       Fan-in (importado por): ${d.inp}
-     </div>
-     ${inCycles ? `<div class="tt-cycle">⟳ ${inCycles}</div>` : ''}
-     ${hubInfo}${godInfo}${chattyInfo}${hotspotInfo}${archInfo}`;
+     <div class="tt-info">Pasta: ${dir}<br>${primaryMetrics}</div>
+     ${badges.join('')}`;
 
   tipEl.classList.add('vis');
   moveTip(event);

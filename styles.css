@@ -142,6 +142,8 @@
     .stat-card.yellow   .stat-value { color: var(--yellow);  }
     .stat-card.coral    .stat-value { color: var(--coral);   }
     .stat-card.magenta  .stat-value { color: var(--magenta); }
+    .stat-card-clickable { cursor: pointer; }
+    .stat-card-clickable:hover { background: var(--bg3); }
 
     /* ── Controls Bar ── */
     .controls-bar {
@@ -228,6 +230,74 @@
     #smellList::-webkit-scrollbar-track { background: transparent; }
     #smellList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+    /* ── Metric info modal ── */
+    .mi-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1100; padding: 16px;
+    }
+    .mi-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; width: 100%; max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      animation: miIn .15s ease;
+    }
+    @keyframes miIn { from { opacity:0; transform:translateY(-8px) scale(.97); } to { opacity:1; transform:none; } }
+    .mi-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px 12px; border-bottom: 1px solid var(--border);
+    }
+    .mi-icon  { font-size: 18px; line-height: 1; flex-shrink: 0; }
+    .mi-title { font-size: 14px; font-weight: 700; color: var(--fg); flex: 1; }
+    .mi-close {
+      background: none; border: none; color: var(--muted); font-size: 14px;
+      cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;
+      transition: color .15s, background .15s;
+    }
+    .mi-close:hover { color: var(--fg); background: var(--border); }
+    .mi-body { padding: 14px 16px 16px; font-size: 12.5px; color: var(--fg-dim); line-height: 1.6; }
+    .mi-body p { margin: 0 0 10px; }
+    .mi-body p:last-child { margin-bottom: 0; }
+    .mi-body strong { color: var(--fg); }
+    .mi-body .mi-thresholds {
+      margin-top: 12px; padding: 10px 12px;
+      background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    }
+    .mi-body .mi-thresholds-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin-bottom: 6px;
+    }
+    .mi-body .mi-thr-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mi-body .mi-thr-chip {
+      font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;
+    }
+    .mi-thr-chip.med  { background: rgba(210,153,34,.15); color: var(--orange); border: 1px solid rgba(210,153,34,.3); }
+    .mi-thr-chip.high { background: rgba(248,81,73,.15);  color: var(--red);    border: 1px solid rgba(248,81,73,.3); }
+    /* ── Metric cells — clickable indicator ── */
+    .metric-clickable {
+      cursor: pointer; position: relative;
+      transition: background .15s, border-color .15s;
+    }
+    .metric-clickable:hover { background: rgba(88,166,255,.07); border-radius: 5px; }
+    .metric-info-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; border-radius: 50%;
+      font-size: 9px; font-style: normal; font-weight: 700;
+      color: var(--muted); border: 1px solid var(--border);
+      margin-left: 4px; flex-shrink: 0; opacity: 0;
+      transition: opacity .15s, color .15s, border-color .15s;
+      pointer-events: none;
+    }
+    .metric-clickable:hover .metric-info-btn { opacity: 1; color: var(--blue); border-color: var(--blue); }
+
+    /* ── Threshold info banner ── */
+    .threshold-info {
+      font-size: 11px; color: var(--muted);
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;
+    }
+    .threshold-info strong { color: var(--fg); }
+
     /* ── Shared Card ── */
     .smell-card {
       background: var(--bg3); border: 1px solid var(--border);
@@ -242,6 +312,11 @@
     .sev-high   { background: rgba(248,81,73,.18);  color: var(--red);    border: 1px solid rgba(248,81,73,.3); }
     .sev-medium { background: rgba(210,153,34,.18); color: var(--orange); border: 1px solid rgba(210,153,34,.3); }
     .sev-low    { background: rgba(63,185,80,.18);  color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
+    .sev-normal { background: rgba(139,148,158,.1); color: var(--muted);  border: 1px solid rgba(139,148,158,.2); }
+    .smell-card.normal { opacity: .6; cursor: default; }
+    .smell-card.normal:hover { opacity: .9; }
+    .smell-row.row-normal td { opacity: .5; }
+    .smell-row.row-normal:hover td { opacity: .85; }
     .card-title { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .card-count { margin-left: auto; font-size: 11px; color: var(--text2); flex-shrink: 0; }
 

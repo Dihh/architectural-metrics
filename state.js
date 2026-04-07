@@ -20,13 +20,15 @@ export const state = {
 
   // God Component results
   // each entry: { path, loc, funcCount, exportCount, importCount, score, sev, flags }
-  godModules:   [],
-  godNodePaths: new Set(),
+  godModules:    [],
+  godNodePaths:  new Set(),
+  godMetricsMap: new Map(), // path → { loc, funcCount, exportCount, importCount, score } for ALL files
 
   // Chatty Component results
   // each entry: { path, namedImports, maxFromOne, topDep, score, sev, flags }
-  chattyModules:   [],
-  chattyNodePaths: new Set(),
+  chattyModules:    [],
+  chattyNodePaths:  new Set(),
+  chattyMetricsMap: new Map(), // path → { namedImports, maxFromOne, topDep, score } for ALL files
 
   // Hotspot results (requires commits.txt)
   // each entry: { path, commitCount, linesChanged, loc, score, sev, flags }
