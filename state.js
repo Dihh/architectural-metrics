@@ -63,36 +63,53 @@ export const SKIP_DIRS = new Set([
   'coverage', '__pycache__', '.cache', 'vendor', '.turbo', 'out', '.output',
 ]);
 
-// Hub thresholds
-export const HUB_MIN_IN    = 3;
-export const HUB_MIN_OUT   = 3;
-export const HUB_MIN_TOTAL = 8;
+// ─────────────────────────────────────────
+// Configurable thresholds
+// Defaults live here; overrides are persisted to localStorage under 'arch-thresholds'.
+// ─────────────────────────────────────────
+export const THRESHOLD_DEFAULTS = {
+  // Hub-Like Dependency
+  HUB_MIN_IN:    3,
+  HUB_MIN_OUT:   3,
+  HUB_MIN_TOTAL: 8,
+  // God Component
+  GOD_LOC_MED:   300,
+  GOD_LOC_HIGH:  500,
+  GOD_FUNC_MED:  15,
+  GOD_FUNC_HIGH: 25,
+  GOD_EXP_MED:   6,
+  GOD_EXP_HIGH:  12,
+  GOD_IMP_MIN:   10,
+  GOD_MIN_SCORE: 2,
+  // Chatty Component
+  CHATTY_NAMED_MED:  15,
+  CHATTY_NAMED_HIGH: 30,
+  CHATTY_MAX_MED:    6,
+  CHATTY_MAX_HIGH:   10,
+  CHATTY_MIN_SCORE:  2,
+  // Hotspot
+  HOTSPOT_FREQ_MED:  10,
+  HOTSPOT_FREQ_HIGH: 25,
+  HOTSPOT_LOC_MED:   300,
+  HOTSPOT_LOC_HIGH:  500,
+  HOTSPOT_MIN_SCORE: 2,
+  // Architectural Hotspot
+  ARCH_CENTRALITY_MED:  8,
+  ARCH_CENTRALITY_HIGH: 15,
+  ARCH_MIN_SCORE:       2,
+};
 
-// God Component thresholds (each exceeded metric adds points to the god score)
-export const GOD_LOC_MED   = 300;   // +1 pt
-export const GOD_LOC_HIGH  = 500;   // +1 pt more
-export const GOD_FUNC_MED  = 15;    // +1 pt
-export const GOD_FUNC_HIGH = 25;    // +1 pt more
-export const GOD_EXP_MED   = 6;     // +1 pt
-export const GOD_EXP_HIGH  = 12;    // +1 pt more
-export const GOD_IMP_MIN   = 10;    // +1 pt  (fan-out)
-export const GOD_MIN_SCORE = 2;     // minimum score to be flagged
-
-// Chatty Component thresholds
-export const CHATTY_NAMED_MED  = 15;  // total named imports +1 pt
-export const CHATTY_NAMED_HIGH = 30;  // total named imports +1 pt more
-export const CHATTY_MAX_MED    = 6;   // max symbols from one dep +1 pt
-export const CHATTY_MAX_HIGH   = 10;  // max symbols from one dep +1 pt more
-export const CHATTY_MIN_SCORE  = 2;   // minimum score to be flagged
-
-// Hotspot thresholds (change frequency + size)
-export const HOTSPOT_FREQ_MED  = 10;  // commits touching file +1 pt
-export const HOTSPOT_FREQ_HIGH = 25;  // +1 pt more
-export const HOTSPOT_LOC_MED   = 300; // LOC +1 pt  (reuses GOD thresholds conceptually)
-export const HOTSPOT_LOC_HIGH  = 500; // +1 pt more
-export const HOTSPOT_MIN_SCORE = 2;   // must fire at least two dimensions
-
-// Architectural Hotspot thresholds (frequency + centrality + size)
-export const ARCH_CENTRALITY_MED  = 8;  // fan-in + fan-out +1 pt
-export const ARCH_CENTRALITY_HIGH = 15; // +1 pt more
-export const ARCH_MIN_SCORE       = 2;  // minimum score to be flagged
+// Mutable thresholds object — all modules share the same reference.
+// Mutating a property (e.g. thresholds.HUB_MIN_IN = 5) propagates everywhere.
+export const thresholds = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('arch-thresholds') || '{}');
+    const out = { ...THRESHOLD_DEFAULTS };
+    for (const [k, v] of Object.entries(saved)) {
+      if (k in out && typeof v === 'number' && Number.isFinite(v) && v >= 0) out[k] = v;
+    }
+    return out;
+  } catch {
+    return { ...THRESHOLD_DEFAULTS };
+  }
+})();

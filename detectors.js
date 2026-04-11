@@ -1,19 +1,4 @@
-import {
-  state,
-  HUB_MIN_IN, HUB_MIN_OUT, HUB_MIN_TOTAL,
-  GOD_LOC_MED, GOD_LOC_HIGH,
-  GOD_FUNC_MED, GOD_FUNC_HIGH,
-  GOD_EXP_MED, GOD_EXP_HIGH,
-  GOD_IMP_MIN, GOD_MIN_SCORE,
-  CHATTY_NAMED_MED, CHATTY_NAMED_HIGH,
-  CHATTY_MAX_MED, CHATTY_MAX_HIGH,
-  CHATTY_MIN_SCORE,
-  HOTSPOT_FREQ_MED, HOTSPOT_FREQ_HIGH,
-  HOTSPOT_LOC_MED,  HOTSPOT_LOC_HIGH,
-  HOTSPOT_MIN_SCORE,
-  ARCH_CENTRALITY_MED, ARCH_CENTRALITY_HIGH,
-  ARCH_MIN_SCORE,
-} from './state.js';
+import { state, thresholds } from './state.js';
 import { isSupported, shouldSkip, readText, extractImports, resolveImport, parseCommitsTxt } from './parser.js';
 
 export const tick = () => new Promise(r => setTimeout(r, 40));
@@ -89,7 +74,7 @@ export function detectHubs() {
     const fanIn  = state.revGraph.get(path)?.size ?? 0;
     const total  = fanIn + fanOut;
 
-    if (fanIn >= HUB_MIN_IN && fanOut >= HUB_MIN_OUT && total >= HUB_MIN_TOTAL) {
+    if (fanIn >= thresholds.HUB_MIN_IN && fanOut >= thresholds.HUB_MIN_OUT && total >= thresholds.HUB_MIN_TOTAL) {
       const sev = total >= 20 ? 'high' : total >= 12 ? 'medium' : 'low';
       hubs.push({ path, fanIn, fanOut, total, sev });
     }
@@ -132,16 +117,16 @@ export function computeGodScore(loc, funcCount, exportCount, importCount) {
   let score = 0;
   const flags = {};
 
-  if      (loc >= GOD_LOC_HIGH)       { score += 2; flags.loc  = 'high';   }
-  else if (loc >= GOD_LOC_MED)        { score += 1; flags.loc  = 'medium'; }
+  if      (loc >= thresholds.GOD_LOC_HIGH)       { score += 2; flags.loc  = 'high';   }
+  else if (loc >= thresholds.GOD_LOC_MED)        { score += 1; flags.loc  = 'medium'; }
 
-  if      (funcCount >= GOD_FUNC_HIGH) { score += 2; flags.func = 'high';   }
-  else if (funcCount >= GOD_FUNC_MED)  { score += 1; flags.func = 'medium'; }
+  if      (funcCount >= thresholds.GOD_FUNC_HIGH) { score += 2; flags.func = 'high';   }
+  else if (funcCount >= thresholds.GOD_FUNC_MED)  { score += 1; flags.func = 'medium'; }
 
-  if      (exportCount >= GOD_EXP_HIGH) { score += 2; flags.exp = 'high';   }
-  else if (exportCount >= GOD_EXP_MED)  { score += 1; flags.exp = 'medium'; }
+  if      (exportCount >= thresholds.GOD_EXP_HIGH) { score += 2; flags.exp = 'high';   }
+  else if (exportCount >= thresholds.GOD_EXP_MED)  { score += 1; flags.exp = 'medium'; }
 
-  if (importCount >= GOD_IMP_MIN) { score += 1; flags.imp = 'medium'; }
+  if (importCount >= thresholds.GOD_IMP_MIN) { score += 1; flags.imp = 'medium'; }
 
   return { score, flags };
 }
@@ -157,7 +142,7 @@ export function detectGodComponents() {
 
     metricsMap.set(path, { loc, funcCount, exportCount, importCount, score });
 
-    if (score >= GOD_MIN_SCORE) {
+    if (score >= thresholds.GOD_MIN_SCORE) {
       const sev = score >= 6 ? 'high' : score >= 4 ? 'medium' : 'low';
       gods.push({ path, loc, funcCount, exportCount, importCount, score, sev, flags });
     }
@@ -210,11 +195,11 @@ export function computeChattyScore(namedImports, maxFromOne) {
   let score = 0;
   const flags = {};
 
-  if      (namedImports >= CHATTY_NAMED_HIGH) { score += 2; flags.named = 'high';   }
-  else if (namedImports >= CHATTY_NAMED_MED)  { score += 1; flags.named = 'medium'; }
+  if      (namedImports >= thresholds.CHATTY_NAMED_HIGH) { score += 2; flags.named = 'high';   }
+  else if (namedImports >= thresholds.CHATTY_NAMED_MED)  { score += 1; flags.named = 'medium'; }
 
-  if      (maxFromOne >= CHATTY_MAX_HIGH) { score += 2; flags.max = 'high';   }
-  else if (maxFromOne >= CHATTY_MAX_MED)  { score += 1; flags.max = 'medium'; }
+  if      (maxFromOne >= thresholds.CHATTY_MAX_HIGH) { score += 2; flags.max = 'high';   }
+  else if (maxFromOne >= thresholds.CHATTY_MAX_MED)  { score += 1; flags.max = 'medium'; }
 
   return { score, flags };
 }
@@ -229,7 +214,7 @@ export function detectChattyComponents() {
 
     metricsMap.set(path, { namedImports, maxFromOne, topDep, score });
 
-    if (score >= CHATTY_MIN_SCORE) {
+    if (score >= thresholds.CHATTY_MIN_SCORE) {
       const sev = score >= 6 ? 'high' : score >= 4 ? 'medium' : 'low';
       chatty.push({ path, namedImports, maxFromOne, topDep, score, sev, flags });
     }
@@ -257,13 +242,13 @@ export function detectHotspots() {
     let score = 0;
     const flags = {};
 
-    if      (commitCount >= HOTSPOT_FREQ_HIGH) { score += 2; flags.freq = 'high';   }
-    else if (commitCount >= HOTSPOT_FREQ_MED)  { score += 1; flags.freq = 'medium'; }
+    if      (commitCount >= thresholds.HOTSPOT_FREQ_HIGH) { score += 2; flags.freq = 'high';   }
+    else if (commitCount >= thresholds.HOTSPOT_FREQ_MED)  { score += 1; flags.freq = 'medium'; }
 
-    if      (loc >= HOTSPOT_LOC_HIGH) { score += 2; flags.loc = 'high';   }
-    else if (loc >= HOTSPOT_LOC_MED)  { score += 1; flags.loc = 'medium'; }
+    if      (loc >= thresholds.HOTSPOT_LOC_HIGH) { score += 2; flags.loc = 'high';   }
+    else if (loc >= thresholds.HOTSPOT_LOC_MED)  { score += 1; flags.loc = 'medium'; }
 
-    if (score >= HOTSPOT_MIN_SCORE) {
+    if (score >= thresholds.HOTSPOT_MIN_SCORE) {
       const sev = score >= 4 ? 'high' : score >= 3 ? 'medium' : 'low';
       hotspots.push({ path, commitCount, linesChanged, loc, score, sev, flags });
     }
@@ -294,16 +279,16 @@ export function detectArchHotspots() {
     let score = 0;
     const flags = {};
 
-    if      (commitCount >= HOTSPOT_FREQ_HIGH)      { score += 2; flags.freq        = 'high';   }
-    else if (commitCount >= HOTSPOT_FREQ_MED)        { score += 1; flags.freq        = 'medium'; }
+    if      (commitCount >= thresholds.HOTSPOT_FREQ_HIGH)      { score += 2; flags.freq        = 'high';   }
+    else if (commitCount >= thresholds.HOTSPOT_FREQ_MED)       { score += 1; flags.freq        = 'medium'; }
 
-    if      (centrality >= ARCH_CENTRALITY_HIGH)     { score += 2; flags.centrality  = 'high';   }
-    else if (centrality >= ARCH_CENTRALITY_MED)      { score += 1; flags.centrality  = 'medium'; }
+    if      (centrality >= thresholds.ARCH_CENTRALITY_HIGH)    { score += 2; flags.centrality  = 'high';   }
+    else if (centrality >= thresholds.ARCH_CENTRALITY_MED)     { score += 1; flags.centrality  = 'medium'; }
 
-    if      (loc >= HOTSPOT_LOC_HIGH)                { score += 2; flags.loc         = 'high';   }
-    else if (loc >= HOTSPOT_LOC_MED)                 { score += 1; flags.loc         = 'medium'; }
+    if      (loc >= thresholds.HOTSPOT_LOC_HIGH)               { score += 2; flags.loc         = 'high';   }
+    else if (loc >= thresholds.HOTSPOT_LOC_MED)                { score += 1; flags.loc         = 'medium'; }
 
-    if (score >= ARCH_MIN_SCORE) {
+    if (score >= thresholds.ARCH_MIN_SCORE) {
       const sev = score >= 5 ? 'high' : score >= 3 ? 'medium' : 'low';
       archs.push({ path, commitCount, loc, centrality, fanIn, fanOut, score, sev, flags });
     }

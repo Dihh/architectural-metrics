@@ -110,15 +110,7 @@ function closeMetricModal() {
   document.getElementById('metricInfoModal').style.display = 'none';
 }
 
-import {
-  state,
-  HUB_MIN_IN, HUB_MIN_OUT, HUB_MIN_TOTAL,
-  GOD_LOC_MED, GOD_FUNC_MED, GOD_EXP_MED,
-  GOD_LOC_HIGH, GOD_FUNC_HIGH, GOD_EXP_HIGH, GOD_IMP_MIN,
-  CHATTY_NAMED_MED, CHATTY_NAMED_HIGH, CHATTY_MAX_MED, CHATTY_MAX_HIGH,
-  HOTSPOT_FREQ_MED, HOTSPOT_FREQ_HIGH, HOTSPOT_LOC_MED, HOTSPOT_LOC_HIGH,
-  ARCH_CENTRALITY_MED, ARCH_CENTRALITY_HIGH,
-} from './state.js';
+import { state, thresholds, THRESHOLD_DEFAULTS } from './state.js';
 import {
   analyseFiles, findCyclePath, tick,
   computeGodMetrics, computeGodScore,
@@ -190,7 +182,7 @@ function renderCycleList() {
 function renderHubList() {
   const el = document.getElementById('smellList');
   el.innerHTML = `<div class="threshold-info">
-    Limiar: fan-in ≥ <strong>${HUB_MIN_IN}</strong> · fan-out ≥ <strong>${HUB_MIN_OUT}</strong> · total ≥ <strong>${HUB_MIN_TOTAL}</strong>
+    Limiar: fan-in ≥ <strong>${thresholds.HUB_MIN_IN}</strong> · fan-out ≥ <strong>${thresholds.HUB_MIN_OUT}</strong> · total ≥ <strong>${thresholds.HUB_MIN_TOTAL}</strong>
   </div>`;
 
   // Build metrics for ALL files
@@ -259,16 +251,16 @@ function renderHubList() {
 // Render — God Component list
 // ─────────────────────────────────────────
 const METRIC_DEFS = [
-  { key: 'loc',  icon: '≡', label: 'LOC',     getter: m => m.loc,         med: GOD_LOC_MED,  high: GOD_LOC_HIGH },
-  { key: 'func', icon: 'ƒ', label: 'Funções',  getter: m => m.funcCount,   med: GOD_FUNC_MED, high: GOD_FUNC_HIGH },
-  { key: 'exp',  icon: '↑', label: 'Exports',  getter: m => m.exportCount, med: GOD_EXP_MED,  high: GOD_EXP_HIGH },
-  { key: 'imp',  icon: '↓', label: 'Imports',  getter: m => m.importCount, med: GOD_IMP_MIN,  high: null },
+  { key: 'loc',  icon: '≡', label: 'LOC',     getter: m => m.loc,         get med() { return thresholds.GOD_LOC_MED;  }, get high() { return thresholds.GOD_LOC_HIGH;  } },
+  { key: 'func', icon: 'ƒ', label: 'Funções',  getter: m => m.funcCount,   get med() { return thresholds.GOD_FUNC_MED; }, get high() { return thresholds.GOD_FUNC_HIGH; } },
+  { key: 'exp',  icon: '↑', label: 'Exports',  getter: m => m.exportCount, get med() { return thresholds.GOD_EXP_MED;  }, get high() { return thresholds.GOD_EXP_HIGH;  } },
+  { key: 'imp',  icon: '↓', label: 'Imports',  getter: m => m.importCount, get med() { return thresholds.GOD_IMP_MIN;  }, high: null },
 ];
 
 function renderGodList() {
   const el = document.getElementById('smellList');
   el.innerHTML = `<div class="threshold-info">
-    Limiar: LOC ≥ <strong>${GOD_LOC_MED}</strong> · funções ≥ <strong>${GOD_FUNC_MED}</strong> · exports ≥ <strong>${GOD_EXP_MED}</strong> · imports ≥ <strong>${GOD_IMP_MIN}</strong>
+    Limiar: LOC ≥ <strong>${thresholds.GOD_LOC_MED}</strong> · funções ≥ <strong>${thresholds.GOD_FUNC_MED}</strong> · exports ≥ <strong>${thresholds.GOD_EXP_MED}</strong> · imports ≥ <strong>${thresholds.GOD_IMP_MIN}</strong>
   </div>`;
 
   // Build metrics for ALL files
@@ -343,14 +335,14 @@ function renderGodList() {
 // Render — Chatty Component list
 // ─────────────────────────────────────────
 const CHATTY_METRIC_DEFS = [
-  { key: 'named', icon: '⇄', label: 'Símbolos',   getter: m => m.namedImports, med: CHATTY_NAMED_MED, high: CHATTY_NAMED_HIGH },
-  { key: 'max',   icon: '↗', label: 'Max de 1 dep', getter: m => m.maxFromOne,   med: CHATTY_MAX_MED,   high: CHATTY_MAX_HIGH },
+  { key: 'named', icon: '⇄', label: 'Símbolos',    getter: m => m.namedImports, get med() { return thresholds.CHATTY_NAMED_MED; }, get high() { return thresholds.CHATTY_NAMED_HIGH; } },
+  { key: 'max',   icon: '↗', label: 'Max de 1 dep', getter: m => m.maxFromOne,   get med() { return thresholds.CHATTY_MAX_MED;   }, get high() { return thresholds.CHATTY_MAX_HIGH;   } },
 ];
 
 function renderChattyList() {
   const el = document.getElementById('smellList');
   el.innerHTML = `<div class="threshold-info">
-    Limiar: símbolos totais ≥ <strong>${CHATTY_NAMED_MED}</strong> · ou máx. de uma dep ≥ <strong>${CHATTY_MAX_MED}</strong>
+    Limiar: símbolos totais ≥ <strong>${thresholds.CHATTY_NAMED_MED}</strong> · ou máx. de uma dep ≥ <strong>${thresholds.CHATTY_MAX_MED}</strong>
   </div>`;
 
   // Build metrics for ALL files
@@ -434,8 +426,8 @@ function renderChattyList() {
 // Render — Hotspot list
 // ─────────────────────────────────────────
 const HOTSPOT_METRIC_DEFS = [
-  { key: 'freq', icon: '↻', label: 'Commits',  getter: m => m.commitCount, med: HOTSPOT_FREQ_MED, high: HOTSPOT_FREQ_HIGH },
-  { key: 'loc',  icon: '≡', label: 'LOC',      getter: m => m.loc,         med: HOTSPOT_LOC_MED,  high: HOTSPOT_LOC_HIGH  },
+  { key: 'freq', icon: '↻', label: 'Commits', getter: m => m.commitCount, get med() { return thresholds.HOTSPOT_FREQ_MED; }, get high() { return thresholds.HOTSPOT_FREQ_HIGH; } },
+  { key: 'loc',  icon: '≡', label: 'LOC',     getter: m => m.loc,         get med() { return thresholds.HOTSPOT_LOC_MED;  }, get high() { return thresholds.HOTSPOT_LOC_HIGH;  } },
 ];
 
 function renderHotspotList() {
@@ -454,7 +446,7 @@ function renderHotspotList() {
   }
 
   el.innerHTML = `<div class="threshold-info">
-    Limiar: commits ≥ <strong>${HOTSPOT_FREQ_MED}</strong> · LOC ≥ <strong>${HOTSPOT_LOC_MED}</strong> (ambos devem ser atingidos)
+    Limiar: commits ≥ <strong>${thresholds.HOTSPOT_FREQ_MED}</strong> · LOC ≥ <strong>${thresholds.HOTSPOT_LOC_MED}</strong> (ambos devem ser atingidos)
   </div>`;
 
   // Build metrics for ALL files that appear in commits.txt
@@ -532,9 +524,9 @@ function renderHotspotList() {
 // Render — Architectural Hotspot list
 // ─────────────────────────────────────────
 const ARCH_METRIC_DEFS = [
-  { key: 'freq',       icon: '↻', label: 'Commits',       getter: m => m.commitCount, med: HOTSPOT_FREQ_MED,    high: HOTSPOT_FREQ_HIGH    },
-  { key: 'centrality', icon: '⟺', label: 'Centralidade',  getter: m => m.centrality,  med: ARCH_CENTRALITY_MED, high: ARCH_CENTRALITY_HIGH },
-  { key: 'loc',        icon: '≡', label: 'LOC',           getter: m => m.loc,         med: HOTSPOT_LOC_MED,     high: HOTSPOT_LOC_HIGH     },
+  { key: 'freq',       icon: '↻', label: 'Commits',      getter: m => m.commitCount, get med() { return thresholds.HOTSPOT_FREQ_MED;    }, get high() { return thresholds.HOTSPOT_FREQ_HIGH;    } },
+  { key: 'centrality', icon: '⟺', label: 'Centralidade', getter: m => m.centrality,  get med() { return thresholds.ARCH_CENTRALITY_MED; }, get high() { return thresholds.ARCH_CENTRALITY_HIGH; } },
+  { key: 'loc',        icon: '≡', label: 'LOC',          getter: m => m.loc,         get med() { return thresholds.HOTSPOT_LOC_MED;     }, get high() { return thresholds.HOTSPOT_LOC_HIGH;     } },
 ];
 
 function renderArchList() {
@@ -553,7 +545,7 @@ function renderArchList() {
   }
 
   el.innerHTML = `<div class="threshold-info">
-    Limiar: commits ≥ <strong>${HOTSPOT_FREQ_MED}</strong> · centralidade ≥ <strong>${ARCH_CENTRALITY_MED}</strong> · LOC ≥ <strong>${HOTSPOT_LOC_MED}</strong>
+    Limiar: commits ≥ <strong>${thresholds.HOTSPOT_FREQ_MED}</strong> · centralidade ≥ <strong>${thresholds.ARCH_CENTRALITY_MED}</strong> · LOC ≥ <strong>${thresholds.HOTSPOT_LOC_MED}</strong>
   </div>`;
 
   // Build metrics for ALL files that appear in commits.txt
@@ -1340,6 +1332,61 @@ document.getElementById('smellList').addEventListener('click', e => {
   if (!highlight) return;
   highlight(wasSelected ? -1 : idx);
   if (!wasSelected) row.classList.add('selected');
+});
+
+// ─────────────────────────────────────────
+// Settings modal — threshold editor
+// ─────────────────────────────────────────
+function openSettings() {
+  // Populate inputs with current threshold values
+  document.querySelectorAll('#settingsModal [data-key]').forEach(input => {
+    input.value = thresholds[input.dataset.key];
+  });
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+function saveThreshold(key, rawValue) {
+  const val = parseInt(rawValue, 10);
+  if (!Number.isFinite(val) || val < 0) return;
+  thresholds[key] = val;
+  try {
+    // Persist only values that differ from defaults
+    const overrides = {};
+    for (const k of Object.keys(THRESHOLD_DEFAULTS)) {
+      if (thresholds[k] !== THRESHOLD_DEFAULTS[k]) overrides[k] = thresholds[k];
+    }
+    localStorage.setItem('arch-thresholds', JSON.stringify(overrides));
+  } catch { /* storage unavailable */ }
+}
+
+function resetThresholds() {
+  for (const [k, v] of Object.entries(THRESHOLD_DEFAULTS)) thresholds[k] = v;
+  try { localStorage.removeItem('arch-thresholds'); } catch { /* ignore */ }
+  document.querySelectorAll('#settingsModal [data-key]').forEach(input => {
+    input.value = THRESHOLD_DEFAULTS[input.dataset.key];
+  });
+}
+
+document.getElementById('btnSettings').addEventListener('click', openSettings);
+document.getElementById('btnSettingsClose').addEventListener('click', closeSettings);
+document.getElementById('settingsModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('settingsModal')) closeSettings();
+});
+document.getElementById('btnSettingsReset').addEventListener('click', resetThresholds);
+
+// Auto-save on input change (event delegation)
+document.getElementById('settingsModal').addEventListener('input', e => {
+  const input = e.target.closest('[data-key]');
+  if (input) saveThreshold(input.dataset.key, input.value);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('settingsModal').style.display !== 'none')
+    closeSettings();
 });
 
 // Click on empty SVG area → deselect

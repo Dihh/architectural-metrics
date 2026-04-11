@@ -52,6 +52,148 @@
       Seleção de pasta requer Android Chrome ou desktop.<br>
       iOS Safari não suporta upload de pastas.
     </p>
+    <button id="btnSettings" class="btn-settings">⚙ Configurar Limiares</button>
+  </div>
+
+  <!-- ═══════════════════ SETTINGS MODAL ═══════════════════ -->
+  <div id="settingsModal" class="settings-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-card">
+      <div class="settings-header">
+        <span class="settings-header-icon">⚙</span>
+        <span class="settings-title" id="settingsTitle">Configurar Limiares</span>
+        <button class="settings-close" id="btnSettingsClose" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="settings-body">
+        <p class="settings-note">As alterações são salvas automaticamente no navegador e aplicadas na próxima análise.</p>
+
+        <!-- Hub -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <span class="sg-dot" style="background:var(--orange)"></span>
+            ◎ Hub-Like Dependency
+          </div>
+          <div class="settings-fields">
+            <label class="sf-label">Fan-in mínimo
+              <input class="sf-input" type="number" min="1" data-key="HUB_MIN_IN" />
+            </label>
+            <label class="sf-label">Fan-out mínimo
+              <input class="sf-input" type="number" min="1" data-key="HUB_MIN_OUT" />
+            </label>
+            <label class="sf-label">Total mínimo
+              <input class="sf-input" type="number" min="1" data-key="HUB_MIN_TOTAL" />
+            </label>
+          </div>
+        </div>
+
+        <!-- God -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <span class="sg-dot" style="background:var(--teal)"></span>
+            ⊕ God Component
+          </div>
+          <div class="settings-fields">
+            <label class="sf-label">LOC médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_LOC_MED" />
+            </label>
+            <label class="sf-label">LOC alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_LOC_HIGH" />
+            </label>
+            <label class="sf-label">Funções médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_FUNC_MED" />
+            </label>
+            <label class="sf-label">Funções alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_FUNC_HIGH" />
+            </label>
+            <label class="sf-label">Exports médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_EXP_MED" />
+            </label>
+            <label class="sf-label">Exports alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_EXP_HIGH" />
+            </label>
+            <label class="sf-label">Imports mínimo (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="GOD_IMP_MIN" />
+            </label>
+            <label class="sf-label">Score mínimo p/ flag
+              <input class="sf-input" type="number" min="1" data-key="GOD_MIN_SCORE" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Chatty -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <span class="sg-dot" style="background:var(--yellow)"></span>
+            ⇄ Chatty Component
+          </div>
+          <div class="settings-fields">
+            <label class="sf-label">Símbolos totais médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="CHATTY_NAMED_MED" />
+            </label>
+            <label class="sf-label">Símbolos totais alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="CHATTY_NAMED_HIGH" />
+            </label>
+            <label class="sf-label">Máx. de 1 dep médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="CHATTY_MAX_MED" />
+            </label>
+            <label class="sf-label">Máx. de 1 dep alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="CHATTY_MAX_HIGH" />
+            </label>
+            <label class="sf-label">Score mínimo p/ flag
+              <input class="sf-input" type="number" min="1" data-key="CHATTY_MIN_SCORE" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Hotspot -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <span class="sg-dot" style="background:var(--coral)"></span>
+            🔥 Hotspot
+          </div>
+          <div class="settings-fields">
+            <label class="sf-label">Commits médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="HOTSPOT_FREQ_MED" />
+            </label>
+            <label class="sf-label">Commits alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="HOTSPOT_FREQ_HIGH" />
+            </label>
+            <label class="sf-label">LOC médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="HOTSPOT_LOC_MED" />
+            </label>
+            <label class="sf-label">LOC alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="HOTSPOT_LOC_HIGH" />
+            </label>
+            <label class="sf-label">Score mínimo p/ flag
+              <input class="sf-input" type="number" min="1" data-key="HOTSPOT_MIN_SCORE" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Arch Hotspot -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <span class="sg-dot" style="background:var(--magenta)"></span>
+            ⬡ Arch Hotspot
+          </div>
+          <div class="settings-fields">
+            <label class="sf-label">Centralidade médio (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="ARCH_CENTRALITY_MED" />
+            </label>
+            <label class="sf-label">Centralidade alto (+1pt)
+              <input class="sf-input" type="number" min="1" data-key="ARCH_CENTRALITY_HIGH" />
+            </label>
+            <label class="sf-label">Score mínimo p/ flag
+              <input class="sf-input" type="number" min="1" data-key="ARCH_MIN_SCORE" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <button class="settings-reset-btn" id="btnSettingsReset">↺ Restaurar padrões</button>
+      </div>
+    </div>
   </div>
 
   <!-- ─── LOADING SCREEN ─── -->
