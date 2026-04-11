@@ -5,6 +5,83 @@ let listView = 'cards'; // 'cards' | 'table'
 // Metric info definitions (used by modal)
 // ─────────────────────────────────────────
 const METRIC_INFO = {
+  // ── Architecture smell descriptions (used by the settings modal info buttons) ──
+  'smell-cyclic': {
+    icon: '⟳',
+    title: 'Cyclic Dependency',
+    desc: `<p><strong>Cyclic Dependency</strong> ocorre quando dois ou mais componentes estabelecem entre si um ciclo de dependências: o módulo A depende de B, que depende de A — diretamente ou por cadeia intermediária.</p>
+           <p>Isso viola a estrutura hierárquica de dependências (DAG), tornando impossível compreender, testar ou substituir qualquer módulo do ciclo de forma isolada. Estudos empíricos mostram que componentes em ciclos são modificados com frequência significativamente maior, amplificando o impacto de qualquer alteração.</p>
+           <p><em>Detecção via algoritmo de Tarjan (SCC). A classificação é binária: qualquer ciclo no grafo caracteriza o smell — não há limiar numérico configurável.</em></p>`,
+    thresholds: [
+      { label: 'SCC ≥ 2 módulos', cls: 'med' },
+      { label: '≥ 3 módulos → MÉDIO', cls: 'med' },
+      { label: '≥ 5 módulos → ALTO', cls: 'high' },
+    ],
+  },
+  'smell-hub': {
+    icon: '◎',
+    title: 'Hub-Like Dependency',
+    desc: `<p><strong>Hub-Like Dependency</strong> caracteriza um componente com número excessivo de dependências tanto de entrada (<em>fan-in</em>) quanto de saída (<em>fan-out</em>), tornando-o um ponto central de convergência no grafo de dependências.</p>
+           <p>Qualquer modificação no hub propaga efeitos para um grande número de dependentes, enquanto alterações nos módulos dos quais ele depende mudam seu comportamento. Isso eleva o risco de refatorações e dificulta o desenvolvimento paralelo, além de criar gargalos de desempenho em sistemas distribuídos.</p>
+           <p><em>A literatura não estabelece limiares absolutos consensuais (ferramentas como Arcan usam limiares estatísticos relativos ao sistema). Este estudo adota limiares absolutos para fan-in, fan-out e total.</em></p>`,
+    thresholds: [
+      { label: `Fan-in ≥ HUB_MIN_IN`, cls: 'med' },
+      { label: `Fan-out ≥ HUB_MIN_OUT`, cls: 'med' },
+      { label: `Total ≥ HUB_MIN_TOTAL`, cls: 'high' },
+    ],
+  },
+  'smell-god': {
+    icon: '⊕',
+    title: 'God Component',
+    desc: `<p><strong>God Component</strong> (também chamado <em>Blob</em> ou <em>Large Component</em>) descreve um módulo que acumulou responsabilidades excessivas — a manifestação arquitetural do clássico <em>God Class</em>.</p>
+           <p>Ele dificultam a adição de novas funcionalidades (qualquer <em>feature</em> relacionada precisa interagir com ele), aumenta o acoplamento global e concentra desproporcional parcela dos defeitos do sistema. Tornhill &amp; Borg demonstram empiricamente que módulos com alta densidade de código e modificações frequentes são responsáveis pela maioria dos bugs em produção.</p>
+           <p><em>Sistema de pontuação: cada métrica que excede seu limiar médio adiciona +1 ponto; exceder o limiar alto adiciona +1 ponto a mais. Atingir o score mínimo configura o smell.</em></p>`,
+    thresholds: [
+      { label: 'LOC médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Funções médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Exports médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Imports ≥ mínimo: +1 pt', cls: 'med' },
+      { label: `Score ≥ GOD_MIN_SCORE → flagged`, cls: 'high' },
+    ],
+  },
+  'smell-chatty': {
+    icon: '⇄',
+    title: 'Chatty Component',
+    desc: `<p><strong>Chatty Component</strong> descreve um módulo que importa um número excessivo de símbolos nomeados de suas dependências, indicando acoplamento comunicacional excessivo e ausência de abstrações adequadas na interface entre componentes.</p>
+           <p>No contexto de módulos JS/TS, isso se manifesta como <code>import { a, b, c, d… }</code> extensos — especialmente quando muitos símbolos vêm de uma única dependência. Esse padrão fragiliza o componente: qualquer refatoração na API do módulo dependido pode quebrar múltiplos pontos de uso.</p>
+           <p><em>A literatura descreve o smell de forma qualitativa, sem limiares numéricos formalizados (Taibi &amp; Lenarduzzi, 2018). Este estudo adota limiares absolutos próprios baseados na contagem de símbolos importados.</em></p>`,
+    thresholds: [
+      { label: 'Símbolos totais médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Máx. de 1 dep médio/alto: +1/+2 pts', cls: 'med' },
+      { label: `Score ≥ CHATTY_MIN_SCORE → flagged`, cls: 'high' },
+    ],
+  },
+  'smell-hotspot': {
+    icon: '🔥',
+    title: 'Hotspot',
+    desc: `<p><strong>Hotspot</strong> identifica arquivos que combinam <em>grande tamanho</em> com <em>alta frequência de modificações</em> no histórico git — regiões do código que o time precisa tocar constantemente, acumulando dívida técnica.</p>
+           <p>Conceito introduzido por Tornhill (<em>Your Code as a Crime Scene</em>, 2015): ao sobrepor métricas de complexidade estática com métricas comportamentais do git, é possível identificar os pontos de maior risco real — não apenas os maiores arquivos, mas os que mais mudam e já são grandes.</p>
+           <p><em>Requer <code>commits.txt</code> na raiz do projeto. Ambas as dimensões (frequência e tamanho) devem ser atingidas para caracterizar o smell.</em></p>`,
+    thresholds: [
+      { label: 'Commits médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'LOC médio/alto: +1/+2 pts', cls: 'med' },
+      { label: `Score ≥ HOTSPOT_MIN_SCORE → flagged`, cls: 'high' },
+    ],
+  },
+  'smell-arch': {
+    icon: '⬡',
+    title: 'Architectural Hotspot',
+    desc: `<p><strong>Architectural Hotspot</strong> combina três dimensões de risco simultaneamente: <em>frequência de modificação</em> (comportamental), <em>centralidade estrutural</em> (fan-in + fan-out) e <em>tamanho</em> (volumétrica). É o smell de maior gravidade arquitetural.</p>
+           <p>A centralidade mede o quão central o módulo é na rede de dependências: alta centralidade significa que ele conecta muitas partes do sistema. Quando isso se combina com alta taxa de mudanças e grande tamanho, o módulo concentra os três principais vetores de risco arquitetural simultaneamente.</p>
+           <p><em>Extende o conceito de hotspot de Tornhill com a dimensão de centralidade estrutural. Requer <code>commits.txt</code>. Severidade: score ≥ 5 = ALTO · ≥ 3 = MÉDIO.</em></p>`,
+    thresholds: [
+      { label: 'Commits médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Centralidade médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'LOC médio/alto: +1/+2 pts', cls: 'med' },
+      { label: `Score ≥ ARCH_MIN_SCORE → flagged`, cls: 'high' },
+    ],
+  },
+  // ── Per-metric descriptions (used by smell list cards) ──
   loc: {
     icon: '≡',
     title: 'LOC — Lines of Code',
@@ -86,6 +163,13 @@ const METRIC_INFO = {
   },
 };
 
+// Replace threshold key placeholders like GOD_MIN_SCORE with live values
+function resolveThresholdLabel(label) {
+  return label.replace(/\b([A-Z][A-Z0-9_]+)\b/g, (match) =>
+    match in thresholds ? thresholds[match] : match
+  );
+}
+
 function openMetricModal(key) {
   const info = METRIC_INFO[key];
   if (!info) return;
@@ -97,7 +181,7 @@ function openMetricModal(key) {
     ? `<div class="mi-thresholds">
          <div class="mi-thresholds-title">Limiares de detecção</div>
          <div class="mi-thr-row">
-           ${info.thresholds.map(t => `<span class="mi-thr-chip ${t.cls}">${t.label}</span>`).join('')}
+           ${info.thresholds.map(t => `<span class="mi-thr-chip ${t.cls}">${resolveThresholdLabel(t.label)}</span>`).join('')}
          </div>
        </div>`
     : '';
@@ -1249,8 +1333,13 @@ document.getElementById('metricInfoModal').addEventListener('click', e => {
   if (e.target === document.getElementById('metricInfoModal')) closeMetricModal();
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('metricInfoModal').style.display !== 'none')
+  if (e.key !== 'Escape') return;
+  // Close topmost visible modal first
+  if (document.getElementById('metricInfoModal').style.display !== 'none') {
     closeMetricModal();
+  } else if (document.getElementById('settingsModal').style.display !== 'none') {
+    closeSettings();
+  }
 });
 
 // Report button
@@ -1384,9 +1473,10 @@ document.getElementById('settingsModal').addEventListener('input', e => {
   if (input) saveThreshold(input.dataset.key, input.value);
 });
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('settingsModal').style.display !== 'none')
-    closeSettings();
+// Smell info buttons (event delegation — open the metric info modal)
+document.getElementById('settingsModal').addEventListener('click', e => {
+  const btn = e.target.closest('[data-metric]');
+  if (btn) { e.stopPropagation(); openMetricModal(btn.dataset.metric); }
 });
 
 // Click on empty SVG area → deselect

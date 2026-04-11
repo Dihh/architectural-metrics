@@ -9,11 +9,11 @@ Single-page browser tool that analyses JS/TS projects for architecture smells by
 ```
 index.html   — markup only, zero inline event handlers
 styles.css   — all CSS, dark-theme GitHub-like palette
-state.js     — shared mutable state + all exported constants
+state.js     — shared mutable state, THRESHOLD_DEFAULTS, and mutable thresholds object
 parser.js    — file helpers, import extraction, path resolution, commits.txt parser
 detectors.js — all smell detection algorithms + main analyseFiles() pipeline
 graph.js     — D3.js force-directed graph rendering + highlight helpers
-ui.js        — entry point: render lists, tab switching, event wiring
+ui.js        — entry point: render lists, tab switching, event wiring, settings modal
 ```
 
 ### Dependency order (no circular deps)
@@ -34,11 +34,26 @@ ui.js → detectors.js → parser.js → state.js
 ### Mutable state object pattern
 All shared state lives in a single `export const state = { ... }` object in `state.js`. Every module imports this same reference. Mutations like `state.cyclicSCCs = [...]` propagate everywhere because we mutate the object, not rebind the variable. This sidesteps the ES module read-only binding restriction on `export let`.
 
+### Mutable thresholds object pattern
+All detection thresholds live in a single `export const thresholds = { ... }` object in `state.js`, initialized from `THRESHOLD_DEFAULTS` merged with any overrides saved in `localStorage` (`arch-thresholds` key). Every module that needs a threshold imports `thresholds` and reads `thresholds.HUB_MIN_IN` etc. at call time — never as top-level destructured constants — so runtime edits to `thresholds.*` take effect on the next analysis without a page reload.
+
+Default values are declared in `export const THRESHOLD_DEFAULTS` (also in `state.js`) and are used both as initial values and as the reset target in the settings modal.
+
 ### onProgress callback (avoids circular deps)
 `analyseFiles(files, onProgress)` accepts a callback instead of calling `setLoading` directly. This lets `detectors.js` report progress to the UI without importing from `ui.js`.
 
 ### ES modules (`type="module"`)
 All JS files use `import`/`export`. No globals, no `onclick` attributes. All event listeners are wired in `ui.js` using `addEventListener` and event delegation.
+
+### Modal z-index stack
+Three modal layers exist, ordered from bottom to top:
+| Modal | z-index |
+|-------|---------|
+| Report modal (`#reportModal`) | 10000 |
+| Settings modal (`#settingsModal`) | 10100 |
+| Metric info modal (`#metricInfoModal`) | 10200 |
+
+The `mi-overlay` sits above `settings-overlay` so that smell-info popups triggered from within the settings modal render correctly on top. A single consolidated `keydown → Escape` handler closes the topmost visible modal first.
 
 ---
 
@@ -57,7 +72,7 @@ All JS files use `import`/`export`. No globals, no `onclick` attributes. All eve
 
 ## Thresholds and scoring (state.js)
 
-All thresholds are named constants exported from `state.js`. The scoring system works uniformly: each threshold breach adds points; a minimum score triggers flagging.
+All thresholds live in the mutable `thresholds` object (sourced from `THRESHOLD_DEFAULTS`). Detectors and render functions read them as `thresholds.HUB_MIN_IN` etc. The scoring system works uniformly: each threshold breach adds points; a minimum score triggers flagging.
 
 ### Hub
 - `HUB_MIN_IN = 3`, `HUB_MIN_OUT = 3`, `HUB_MIN_TOTAL = 8`
@@ -97,6 +112,29 @@ All thresholds are named constants exported from `state.js`. The scoring system 
 | LOC | ≥ 300 | ≥ 500 |
 
 `ARCH_MIN_SCORE = 2` to flag. Severity: ≥5 = high, ≥3 = medium, else low.
+
+---
+
+## Configurable thresholds (settings modal)
+
+All numeric thresholds (except Cyclic Dependency, which is binary) are editable by the user via the **⚙ Configurar Limiares** button on the upload screen.
+
+### localStorage persistence
+- Key: `arch-thresholds`
+- Value: JSON object containing **only** the values that differ from `THRESHOLD_DEFAULTS`
+- Loaded on module init in `state.js`; written on every input change in `ui.js`
+- Reset via "↺ Restaurar padrões" button clears the key
+
+### Settings modal structure (`#settingsModal`)
+- One `settings-group` per configurable smell (Hub, God, Chatty, Hotspot, Arch Hotspot)
+- Each group title has a `sg-info-btn` (ℹ) that opens the metric info modal with the smell description
+- Each field is an `<input type="number" data-key="THRESHOLD_KEY">` wired via event delegation
+- `openSettings()` populates inputs from `thresholds.*`; `saveThreshold(key, value)` writes to both `thresholds.*` and localStorage
+
+### Smell info content (METRIC_INFO in ui.js)
+The `METRIC_INFO` object holds descriptions for both per-metric info (used by list cards) and per-smell info (used by the settings modal ℹ buttons). Smell entries use keys prefixed with `smell-`: `smell-hub`, `smell-god`, `smell-chatty`, `smell-hotspot`, `smell-arch`, `smell-cyclic`.
+
+Threshold label strings in smell entries may contain threshold key names (e.g. `"Score ≥ GOD_MIN_SCORE → flagged"`). The `resolveThresholdLabel()` function substitutes live values before rendering the chips, so the modal always reflects current settings.
 
 ---
 
@@ -173,6 +211,8 @@ state = {
 }
 ```
 
+Threshold values are **not** on `state` — they live on the separate `thresholds` export.
+
 ---
 
 ## Analysis pipeline (detectors.js — analyseFiles)
@@ -189,6 +229,8 @@ state = {
    - `detectArchHotspots()` → populate `state.archHotspotModules`
 
 Each step calls `onProgress(msg)` then `await tick()` (40ms setTimeout) to keep the loading screen responsive.
+
+All detectors read thresholds from `thresholds.*` at call time, not from top-level imported constants, so user-edited values take effect on the next `analyseFiles()` call.
 
 ---
 
@@ -216,9 +258,9 @@ For `hotspot` and `arch` smells, node color is independent (no cross-priority bl
 
 ## How to add a new smell
 
-1. **state.js** — add result array, node Set, selected index, and any constants
-2. **detectors.js** — import new constants; write `detectXxx()` function; call it inside `analyseFiles()`
-3. **index.html** — add `<button class="smell-tab" data-smell="xxx">` with a `<span id="tabXxx">`
-4. **ui.js** — import new constants and `highlightXxx` from graph.js; write `renderXxxList()`; add entry to `setSmell()`, `updateStats()`, and `updateViewToggles()` cfg objects; update `handleFiles()` tab count; add `selectedXxxIdx` to all reset chains
+1. **state.js** — add result array, node Set, selected index; add threshold keys to `THRESHOLD_DEFAULTS` (they auto-propagate to `thresholds`)
+2. **detectors.js** — write `detectXxx()` using `thresholds.XXX_KEY`; call it inside `analyseFiles()`
+3. **index.html** — add `<button class="smell-tab" data-smell="xxx">` with a `<span id="tabXxx">`; add a `settings-group` in `#settingsModal` with `<input data-key="XXX_KEY">` fields and a `sg-info-btn` with `data-metric="smell-xxx"`
+4. **ui.js** — add `'smell-xxx'` entry to `METRIC_INFO`; import `highlightXxx` from graph.js; write `renderXxxList()`; add entry to `setSmell()`, `updateStats()`, and `updateViewToggles()` cfg objects; update `handleFiles()` tab count; add `selectedXxxIdx` to all reset chains
 5. **graph.js** — extend `nodeColor`, `nodeStroke`, `nodeLabelColor`, `edgeStroke`, `edgeOpacity`, `edgeMarker`, `updateLegend`, node data object, `resetGraphOpacity` stroke-width guard, node radius (`r`), and `showTip` tooltip; add new arrow marker; add `highlightXxx` export; add view filter case
 6. **styles.css** — add CSS variable, tab active color, stab-count active bg, stat-card color, list-badge color, and card styles (card hover/selected, metrics grid, metric cells, path line, also-tags)
