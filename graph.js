@@ -198,36 +198,36 @@ function edgeMarker(d) {
 function updateLegend() {
   const legends = {
     cyclic:
-      `<div class="legend-item"><div class="legend-dot" style="border-color:#f85149;background:rgba(248,81,73,.2)"></div>Módulo em ciclo</div>
-       <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.1)"></div>Módulo normal</div>
-       <div class="legend-item"><div class="legend-line" style="background:#f85149"></div>Dependência cíclica</div>
-       <div class="legend-item"><div class="legend-line" style="background:#30363d"></div>Dependência normal</div>`,
+      `<div class="legend-item"><div class="legend-dot" style="border-color:#f85149;background:rgba(248,81,73,.2)"></div>Module in cycle</div>
+       <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.1)"></div>Normal module</div>
+       <div class="legend-item"><div class="legend-line" style="background:#f85149"></div>Cyclic dependency</div>
+       <div class="legend-item"><div class="legend-line" style="background:#30363d"></div>Normal dependency</div>`,
     hub:
       `<div class="legend-item"><div class="legend-dot" style="border-color:#d29922;background:rgba(210,153,34,.2)"></div>Hub</div>
-       <div class="legend-item"><div class="legend-dot" style="border-color:#bc8cff;background:rgba(188,140,255,.15)"></div>Hub + ciclo</div>
+       <div class="legend-item"><div class="legend-dot" style="border-color:#bc8cff;background:rgba(188,140,255,.15)"></div>Hub + cycle</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.1)"></div>Normal</div>
-       <div class="legend-item"><div class="legend-line" style="background:#d29922;opacity:.7"></div>Dep. tocando hub</div>`,
+       <div class="legend-item"><div class="legend-line" style="background:#d29922;opacity:.7"></div>Dep. touching hub</div>`,
     god:
       `<div class="legend-item"><div class="legend-dot" style="border-color:#3dc9b0;background:rgba(61,201,176,.18)"></div>God Component</div>
-       <div class="legend-item"><div class="legend-dot" style="border-color:#f85149;background:rgba(248,81,73,.18)"></div>God + ciclo</div>
+       <div class="legend-item"><div class="legend-dot" style="border-color:#f85149;background:rgba(248,81,73,.18)"></div>God + cycle</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#d29922;background:rgba(210,153,34,.2)"></div>God + hub</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.06)"></div>Normal</div>
-       <div class="legend-item"><div class="legend-line" style="background:#3dc9b0;opacity:.7"></div>Dep. tocando god</div>`,
+       <div class="legend-item"><div class="legend-line" style="background:#3dc9b0;opacity:.7"></div>Dep. touching god</div>`,
     chatty:
       `<div class="legend-item"><div class="legend-dot" style="border-color:#e8d44d;background:rgba(232,212,77,.18)"></div>Chatty Component</div>
-       <div class="legend-item"><div class="legend-dot" style="border-color:#f85149;background:rgba(248,81,73,.18)"></div>Chatty + ciclo</div>
+       <div class="legend-item"><div class="legend-dot" style="border-color:#f85149;background:rgba(248,81,73,.18)"></div>Chatty + cycle</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#d29922;background:rgba(210,153,34,.2)"></div>Chatty + hub</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.06)"></div>Normal</div>
-       <div class="legend-item"><div class="legend-line" style="background:#e8d44d;opacity:.7"></div>Dep. tocando chatty</div>`,
+       <div class="legend-item"><div class="legend-line" style="background:#e8d44d;opacity:.7"></div>Dep. touching chatty</div>`,
     hotspot:
       `<div class="legend-item"><div class="legend-dot" style="border-color:#fd9644;background:rgba(253,150,68,.22)"></div>Hotspot</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.06)"></div>Normal</div>
-       <div class="legend-item"><div class="legend-line" style="background:#fd9644;opacity:.7"></div>Dep. tocando hotspot</div>`,
+       <div class="legend-item"><div class="legend-line" style="background:#fd9644;opacity:.7"></div>Dep. touching hotspot</div>`,
     arch:
       `<div class="legend-item"><div class="legend-dot" style="border-color:#e056fd;background:rgba(224,86,253,.2)"></div>Arch Hotspot</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#fd9644;background:rgba(253,150,68,.22)"></div>Arch + Hotspot</div>
        <div class="legend-item"><div class="legend-dot" style="border-color:#58a6ff;background:rgba(88,166,255,.06)"></div>Normal</div>
-       <div class="legend-item"><div class="legend-line" style="background:#e056fd;opacity:.7"></div>Dep. tocando arch</div>`,
+       <div class="legend-item"><div class="legend-line" style="background:#e056fd;opacity:.7"></div>Dep. touching arch</div>`,
   };
   document.getElementById('graphLegend').innerHTML = legends[state.currentSmell] || '';
 }
@@ -259,7 +259,7 @@ export function renderGraph() {
       .attr('x', W / 2).attr('y', H / 2)
       .attr('text-anchor', 'middle')
       .attr('fill', '#8b949e').attr('font-size', '13px')
-      .text('Nenhum módulo encontrado para esta visão.');
+      .text('No modules found for this view.');
     updateLegend();
     return;
   }
@@ -511,21 +511,21 @@ function showTip(event, d) {
   let primaryMetrics = '';
   if (smell === 'cyclic') {
     const inCycles = state.cyclicSCCs
-      .map((scc, i) => scc.includes(d.id) ? `Ciclo #${i + 1}` : null)
+      .map((scc, i) => scc.includes(d.id) ? `Cycle #${i + 1}` : null)
       .filter(Boolean).join(', ');
     primaryMetrics =
-      `Fan-out (importa): ${d.out}<br>Fan-in (importado por): ${d.inp}` +
-      (inCycles ? `<br>Ciclos: ${inCycles}` : '');
+      `Fan-out (imports): ${d.out}<br>Fan-in (imported by): ${d.inp}` +
+      (inCycles ? `<br>Cycles: ${inCycles}` : '');
 
   } else if (smell === 'hub') {
     // hub metrics are always derivable from the graphs
     const total = d.inp + d.out;
     const hm    = state.hubModules.find(m => m.path === d.id);
     primaryMetrics =
-      `Fan-in (importado por): ${d.inp}<br>
-       Fan-out (importa): ${d.out}<br>
-       Total conexões: ${total}` +
-      (hm ? `<br>Severidade: ${hm.sev}` : '');
+      `Fan-in (imported by): ${d.inp}<br>
+       Fan-out (imports): ${d.out}<br>
+       Total connections: ${total}` +
+      (hm ? `<br>Severity: ${hm.sev}` : '');
 
   } else if (smell === 'god') {
     // use the full map so ALL nodes show god metrics
@@ -535,13 +535,13 @@ function showTip(event, d) {
         ? state.godModules.find(m => m.path === d.id) : null;
       primaryMetrics =
         `LOC: ${gm.loc}<br>
-         Funções: ${gm.funcCount}<br>
+         Functions: ${gm.funcCount}<br>
          Exports: ${gm.exportCount}<br>
-         Fan-out (importa): ${gm.importCount}<br>
+         Fan-out (imports): ${gm.importCount}<br>
          Score: ${gm.score}` +
-        (smelly ? ` · Severidade: ${smelly.sev}` : '');
+        (smelly ? ` · Severity: ${smelly.sev}` : '');
     } else {
-      primaryMetrics = `Fan-out (importa): ${d.out}<br>Fan-in (importado por): ${d.inp}`;
+      primaryMetrics = `Fan-out (imports): ${d.out}<br>Fan-in (imported by): ${d.inp}`;
     }
 
   } else if (smell === 'chatty') {
@@ -552,12 +552,12 @@ function showTip(event, d) {
       const smelly = state.chattyNodePaths.has(d.id)
         ? state.chattyModules.find(m => m.path === d.id) : null;
       primaryMetrics =
-        `Símbolos importados: ${cm.namedImports}<br>
-         Máx. de uma dep: ${cm.maxFromOne}${cm.topDep ? ` (${topDepName})` : ''}<br>
+        `Imported symbols: ${cm.namedImports}<br>
+         Max from one dep: ${cm.maxFromOne}${cm.topDep ? ` (${topDepName})` : ''}<br>
          Score: ${cm.score}` +
-        (smelly ? ` · Severidade: ${smelly.sev}` : '');
+        (smelly ? ` · Severity: ${smelly.sev}` : '');
     } else {
-      primaryMetrics = `Fan-out (importa): ${d.out}<br>Fan-in (importado por): ${d.inp}`;
+      primaryMetrics = `Fan-out (imports): ${d.out}<br>Fan-in (imported by): ${d.inp}`;
     }
 
   } else if (smell === 'hotspot') {
@@ -566,10 +566,10 @@ function showTip(event, d) {
     if (cd) {
       primaryMetrics =
         `Commits: ${cd.commitCount}<br>
-         Linhas alteradas: ${cd.linesChanged}` +
-        (hm ? `<br>LOC: ${hm.loc}<br>Score: ${hm.score} · Severidade: ${hm.sev}` : '');
+         Lines changed: ${cd.linesChanged}` +
+        (hm ? `<br>LOC: ${hm.loc}<br>Score: ${hm.score} · Severity: ${hm.sev}` : '');
     } else {
-      primaryMetrics = `Commits: — (não encontrado em commits.txt)<br>Fan-out: ${d.out} · Fan-in: ${d.inp}`;
+      primaryMetrics = `Commits: — (not found in commits.txt)<br>Fan-out: ${d.out} · Fan-in: ${d.inp}`;
     }
 
   } else if (smell === 'arch') {
@@ -579,10 +579,10 @@ function showTip(event, d) {
     if (cd) {
       primaryMetrics =
         `Commits: ${cd.commitCount}<br>
-         Centralidade: ${total} (in: ${d.inp} · out: ${d.out})` +
-        (am ? `<br>LOC: ${am.loc}<br>Score: ${am.score} · Severidade: ${am.sev}` : '');
+         Centrality: ${total} (in: ${d.inp} · out: ${d.out})` +
+        (am ? `<br>LOC: ${am.loc}<br>Score: ${am.score} · Severity: ${am.sev}` : '');
     } else {
-      primaryMetrics = `Commits: — (não encontrado em commits.txt)<br>Centralidade: ${total} (in: ${d.inp} · out: ${d.out})`;
+      primaryMetrics = `Commits: — (not found in commits.txt)<br>Centrality: ${total} (in: ${d.inp} · out: ${d.out})`;
     }
   }
 
@@ -590,12 +590,12 @@ function showTip(event, d) {
   const badges = [];
   if (smell !== 'cyclic') {
     const inCycles = state.cyclicSCCs
-      .map((scc, i) => scc.includes(d.id) ? `Ciclo #${i + 1}` : null)
+      .map((scc, i) => scc.includes(d.id) ? `Cycle #${i + 1}` : null)
       .filter(Boolean).join(', ');
     if (inCycles) badges.push(`<div class="tt-cycle">⟳ ${inCycles}</div>`);
   }
   if (smell !== 'hub' && state.hubNodePaths.has(d.id)) {
-    badges.push(`<div class="tt-hub">◎ Hub: ${d.inp} entradas · ${d.out} saídas</div>`);
+    badges.push(`<div class="tt-hub">◎ Hub: ${d.inp} in · ${d.out} out</div>`);
   }
   if (smell !== 'god') {
     const gm = state.godModules.find(m => m.path === d.id);
@@ -603,7 +603,7 @@ function showTip(event, d) {
   }
   if (smell !== 'chatty') {
     const cm = state.chattyModules.find(m => m.path === d.id);
-    if (cm) badges.push(`<div class="tt-chatty">⇄ Chatty: ${cm.namedImports} símbolos · score ${cm.score}</div>`);
+    if (cm) badges.push(`<div class="tt-chatty">⇄ Chatty: ${cm.namedImports} symbols · score ${cm.score}</div>`);
   }
   if (smell !== 'hotspot') {
     const hm = state.hotspotModules.find(m => m.path === d.id);
@@ -611,12 +611,12 @@ function showTip(event, d) {
   }
   if (smell !== 'arch') {
     const am = state.archHotspotModules.find(m => m.path === d.id);
-    if (am) badges.push(`<div class="tt-arch">⬡ Arch: score ${am.score} · centralidade ${am.centrality}</div>`);
+    if (am) badges.push(`<div class="tt-arch">⬡ Arch: score ${am.score} · centrality ${am.centrality}</div>`);
   }
 
   tipEl.innerHTML =
     `<div class="tt-name">${name}</div>
-     <div class="tt-info">Pasta: ${dir}<br>${primaryMetrics}</div>
+     <div class="tt-info">Folder: ${dir}<br>${primaryMetrics}</div>
      ${badges.join('')}`;
 
   tipEl.classList.add('vis');

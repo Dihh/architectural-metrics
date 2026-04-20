@@ -9,21 +9,21 @@ const METRIC_INFO = {
   'smell-cyclic': {
     icon: '⟳',
     title: 'Cyclic Dependency',
-    desc: `<p><strong>Cyclic Dependency</strong> ocorre quando dois ou mais componentes estabelecem entre si um ciclo de dependências: o módulo A depende de B, que depende de A — diretamente ou por cadeia intermediária.</p>
-           <p>Isso viola a estrutura hierárquica de dependências (DAG), tornando impossível compreender, testar ou substituir qualquer módulo do ciclo de forma isolada. Estudos empíricos mostram que componentes em ciclos são modificados com frequência significativamente maior, amplificando o impacto de qualquer alteração.</p>
-           <p><em>Detecção via algoritmo de Tarjan (SCC). A classificação é binária: qualquer ciclo no grafo caracteriza o smell — não há limiar numérico configurável.</em></p>`,
+    desc: `<p><strong>Cyclic Dependency</strong> occurs when two or more components form a dependency cycle: module A depends on B, which depends on A — directly or through an intermediate chain.</p>
+           <p>This violates the hierarchical dependency structure (DAG), making it impossible to understand, test, or replace any module in the cycle in isolation. Empirical studies show that components in cycles are modified significantly more often, amplifying the impact of any change.</p>
+           <p><em>Detected via Tarjan's SCC algorithm. Classification is binary: any cycle in the graph characterises the smell — there is no configurable numeric threshold.</em></p>`,
     thresholds: [
-      { label: 'SCC ≥ 2 módulos', cls: 'med' },
-      { label: '≥ 3 módulos → MÉDIO', cls: 'med' },
-      { label: '≥ 5 módulos → ALTO', cls: 'high' },
+      { label: 'SCC ≥ 2 modules', cls: 'med' },
+      { label: '≥ 3 modules → MEDIUM', cls: 'med' },
+      { label: '≥ 5 modules → HIGH', cls: 'high' },
     ],
   },
   'smell-hub': {
     icon: '◎',
     title: 'Hub-Like Dependency',
-    desc: `<p><strong>Hub-Like Dependency</strong> caracteriza um componente com número excessivo de dependências tanto de entrada (<em>fan-in</em>) quanto de saída (<em>fan-out</em>), tornando-o um ponto central de convergência no grafo de dependências.</p>
-           <p>Qualquer modificação no hub propaga efeitos para um grande número de dependentes, enquanto alterações nos módulos dos quais ele depende mudam seu comportamento. Isso eleva o risco de refatorações e dificulta o desenvolvimento paralelo, além de criar gargalos de desempenho em sistemas distribuídos.</p>
-           <p><em>A literatura não estabelece limiares absolutos consensuais (ferramentas como Arcan usam limiares estatísticos relativos ao sistema). Este estudo adota limiares absolutos para fan-in, fan-out e total.</em></p>`,
+    desc: `<p><strong>Hub-Like Dependency</strong> describes a component with an excessive number of both incoming (<em>fan-in</em>) and outgoing (<em>fan-out</em>) dependencies, making it a central convergence point in the dependency graph.</p>
+           <p>Any modification to the hub propagates effects to a large number of dependents, while changes to the modules it depends on alter its behaviour. This raises the risk of refactoring, hinders parallel development, and creates performance bottlenecks in distributed systems.</p>
+           <p><em>The literature does not establish consensus absolute thresholds (tools like Arcan use system-relative statistical thresholds). This study adopts absolute thresholds for fan-in, fan-out, and total.</em></p>`,
     thresholds: [
       { label: `Fan-in ≥ HUB_MIN_IN`, cls: 'med' },
       { label: `Fan-out ≥ HUB_MIN_OUT`, cls: 'med' },
@@ -33,51 +33,51 @@ const METRIC_INFO = {
   'smell-god': {
     icon: '⊕',
     title: 'God Component',
-    desc: `<p><strong>God Component</strong> (também chamado <em>Blob</em> ou <em>Large Component</em>) descreve um módulo que acumulou responsabilidades excessivas — a manifestação arquitetural do clássico <em>God Class</em>.</p>
-           <p>Ele dificultam a adição de novas funcionalidades (qualquer <em>feature</em> relacionada precisa interagir com ele), aumenta o acoplamento global e concentra desproporcional parcela dos defeitos do sistema. Tornhill &amp; Borg demonstram empiricamente que módulos com alta densidade de código e modificações frequentes são responsáveis pela maioria dos bugs em produção.</p>
-           <p><em>Sistema de pontuação: cada métrica que excede seu limiar médio adiciona +1 ponto; exceder o limiar alto adiciona +1 ponto a mais. Atingir o score mínimo configura o smell.</em></p>`,
+    desc: `<p><strong>God Component</strong> (also known as <em>Blob</em> or <em>Large Component</em>) describes a module that has accumulated excessive responsibilities — the architectural manifestation of the classic <em>God Class</em>.</p>
+           <p>It hinders adding new features (any related feature must interact with it), increases global coupling, and concentrates a disproportionate share of system defects. Tornhill &amp; Borg empirically demonstrate that modules with high code density and frequent modifications account for the majority of production bugs.</p>
+           <p><em>Scoring system: each metric that exceeds its medium threshold adds +1 point; exceeding the high threshold adds another +1. Reaching the minimum score triggers the smell.</em></p>`,
     thresholds: [
-      { label: 'LOC médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'Funções médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'Exports médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'Imports ≥ mínimo: +1 pt', cls: 'med' },
+      { label: 'LOC medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'Functions medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'Exports medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'Imports ≥ minimum: +1 pt', cls: 'med' },
       { label: `Score ≥ GOD_MIN_SCORE → flagged`, cls: 'high' },
     ],
   },
   'smell-chatty': {
     icon: '⇄',
     title: 'Chatty Component',
-    desc: `<p><strong>Chatty Component</strong> descreve um módulo que importa um número excessivo de símbolos nomeados de suas dependências, indicando acoplamento comunicacional excessivo e ausência de abstrações adequadas na interface entre componentes.</p>
-           <p>No contexto de módulos JS/TS, isso se manifesta como <code>import { a, b, c, d… }</code> extensos — especialmente quando muitos símbolos vêm de uma única dependência. Esse padrão fragiliza o componente: qualquer refatoração na API do módulo dependido pode quebrar múltiplos pontos de uso.</p>
-           <p><em>A literatura descreve o smell de forma qualitativa, sem limiares numéricos formalizados (Taibi &amp; Lenarduzzi, 2018). Este estudo adota limiares absolutos próprios baseados na contagem de símbolos importados.</em></p>`,
+    desc: `<p><strong>Chatty Component</strong> describes a module that imports an excessive number of named symbols from its dependencies, indicating excessive communicational coupling and a lack of adequate abstractions at the interface between components.</p>
+           <p>In the JS/TS module context, this manifests as extensive <code>import { a, b, c, d… }</code> statements — especially when many symbols come from a single dependency. This pattern makes the component fragile: any refactoring of the depended module's API can break multiple call sites.</p>
+           <p><em>The literature describes this smell qualitatively, without formalised numeric thresholds (Taibi &amp; Lenarduzzi, 2018). This study adopts its own absolute thresholds based on imported symbol counts.</em></p>`,
     thresholds: [
-      { label: 'Símbolos totais médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'Máx. de 1 dep médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Total symbols medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'Max from 1 dep medium/high: +1/+2 pts', cls: 'med' },
       { label: `Score ≥ CHATTY_MIN_SCORE → flagged`, cls: 'high' },
     ],
   },
   'smell-hotspot': {
     icon: '🔥',
     title: 'Hotspot',
-    desc: `<p><strong>Hotspot</strong> identifica arquivos que combinam <em>grande tamanho</em> com <em>alta frequência de modificações</em> no histórico git — regiões do código que o time precisa tocar constantemente, acumulando dívida técnica.</p>
-           <p>Conceito introduzido por Tornhill (<em>Your Code as a Crime Scene</em>, 2015): ao sobrepor métricas de complexidade estática com métricas comportamentais do git, é possível identificar os pontos de maior risco real — não apenas os maiores arquivos, mas os que mais mudam e já são grandes.</p>
-           <p><em>Requer <code>commits.txt</code> na raiz do projeto. Ambas as dimensões (frequência e tamanho) devem ser atingidas para caracterizar o smell.</em></p>`,
+    desc: `<p><strong>Hotspot</strong> identifies files that combine <em>large size</em> with <em>high change frequency</em> in the git history — areas of the code the team needs to touch constantly, accumulating technical debt.</p>
+           <p>Concept introduced by Tornhill (<em>Your Code as a Crime Scene</em>, 2015): by overlaying static complexity metrics with git behavioural metrics, it is possible to identify the points of greatest real risk — not just the largest files, but those that change most and are already large.</p>
+           <p><em>Requires <code>commits.txt</code> in the project root. Both dimensions (frequency and size) must be triggered to characterise the smell.</em></p>`,
     thresholds: [
-      { label: 'Commits médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'LOC médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Commits medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'LOC medium/high: +1/+2 pts', cls: 'med' },
       { label: `Score ≥ HOTSPOT_MIN_SCORE → flagged`, cls: 'high' },
     ],
   },
   'smell-arch': {
     icon: '⬡',
     title: 'Architectural Hotspot',
-    desc: `<p><strong>Architectural Hotspot</strong> combina três dimensões de risco simultaneamente: <em>frequência de modificação</em> (comportamental), <em>centralidade estrutural</em> (fan-in + fan-out) e <em>tamanho</em> (volumétrica). É o smell de maior gravidade arquitetural.</p>
-           <p>A centralidade mede o quão central o módulo é na rede de dependências: alta centralidade significa que ele conecta muitas partes do sistema. Quando isso se combina com alta taxa de mudanças e grande tamanho, o módulo concentra os três principais vetores de risco arquitetural simultaneamente.</p>
-           <p><em>Extende o conceito de hotspot de Tornhill com a dimensão de centralidade estrutural. Requer <code>commits.txt</code>. Severidade: score ≥ 5 = ALTO · ≥ 3 = MÉDIO.</em></p>`,
+    desc: `<p><strong>Architectural Hotspot</strong> combines three risk dimensions simultaneously: <em>change frequency</em> (behavioural), <em>structural centrality</em> (fan-in + fan-out), and <em>size</em> (volumetric). It is the smell with the highest architectural severity.</p>
+           <p>Centrality measures how central the module is in the dependency network: high centrality means it connects many parts of the system. When this combines with a high rate of change and large size, the module concentrates all three major architectural risk vectors simultaneously.</p>
+           <p><em>Extends Tornhill's hotspot concept with the structural centrality dimension. Requires <code>commits.txt</code>. Severity: score ≥ 5 = HIGH · ≥ 3 = MEDIUM.</em></p>`,
     thresholds: [
-      { label: 'Commits médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'Centralidade médio/alto: +1/+2 pts', cls: 'med' },
-      { label: 'LOC médio/alto: +1/+2 pts', cls: 'med' },
+      { label: 'Commits medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'Centrality medium/high: +1/+2 pts', cls: 'med' },
+      { label: 'LOC medium/high: +1/+2 pts', cls: 'med' },
       { label: `Score ≥ ARCH_MIN_SCORE → flagged`, cls: 'high' },
     ],
   },
@@ -85,80 +85,80 @@ const METRIC_INFO = {
   loc: {
     icon: '≡',
     title: 'LOC — Lines of Code',
-    desc: `<p><strong>Linhas de código</strong> não vazias e sem comentários puros no arquivo.</p>
-           <p>É o indicador mais básico de tamanho. Arquivos muito grandes tendem a acumular múltiplas responsabilidades que deveriam ser separadas em módulos menores — violando o <em>Princípio da Responsabilidade Única</em>.</p>`,
-    thresholds: [{ label: '≥ 300 linhas', cls: 'med' }, { label: '≥ 500 linhas', cls: 'high' }],
+    desc: `<p>Non-empty, non-comment <strong>lines of code</strong> in the file.</p>
+           <p>The most basic size indicator. Very large files tend to accumulate multiple responsibilities that should be separated into smaller modules — violating the <em>Single Responsibility Principle</em>.</p>`,
+    thresholds: [{ label: '≥ 300 lines', cls: 'med' }, { label: '≥ 500 lines', cls: 'high' }],
   },
   func: {
     icon: 'ƒ',
-    title: 'Funções declaradas',
-    desc: `<p>Contagem de <strong>declarações <code>function</code></strong> e <strong>arrow functions</strong> <code>=></code> no arquivo.</p>
-           <p>Um módulo com muitas funções está provavelmente fazendo mais do que deveria. Cada função adicional aumenta a carga cognitiva de quem lê o código.</p>`,
-    thresholds: [{ label: '≥ 15 funções', cls: 'med' }, { label: '≥ 25 funções', cls: 'high' }],
+    title: 'Declared Functions',
+    desc: `<p>Count of <strong><code>function</code> declarations</strong> and <strong>arrow functions</strong> <code>=></code> in the file.</p>
+           <p>A module with many functions is probably doing more than it should. Each additional function increases the cognitive load for readers.</p>`,
+    thresholds: [{ label: '≥ 15 functions', cls: 'med' }, { label: '≥ 25 functions', cls: 'high' }],
   },
   exp: {
     icon: '↑',
-    title: 'Exports — Interface Pública',
-    desc: `<p>Número de <strong>símbolos exportados</strong> pelo módulo (<code>export const</code>, <code>export function</code>, <code>export class</code>, etc.).</p>
-           <p>Uma interface pública muito grande pode indicar falta de coesão — o módulo expõe demais para o mundo externo, tornando-se difícil de substituir ou refatorar.</p>`,
+    title: 'Exports — Public Interface',
+    desc: `<p>Number of <strong>exported symbols</strong> from the module (<code>export const</code>, <code>export function</code>, <code>export class</code>, etc.).</p>
+           <p>A very large public interface may indicate a lack of cohesion — the module exposes too much to the outside world, making it hard to replace or refactor.</p>`,
     thresholds: [{ label: '≥ 6 exports', cls: 'med' }, { label: '≥ 12 exports', cls: 'high' }],
   },
   imp: {
     icon: '↓',
-    title: 'Fan-out — Dependências de Saída',
-    desc: `<p>Quantidade de <strong>módulos que este arquivo importa</strong> diretamente.</p>
-           <p>Alto fan-out indica forte acoplamento de saída: o arquivo depende de muitos outros. Isso dificulta testes isolados e aumenta a probabilidade de quebrar quando qualquer dependência muda.</p>`,
+    title: 'Fan-out — Outgoing Dependencies',
+    desc: `<p>Number of <strong>modules this file imports</strong> directly.</p>
+           <p>High fan-out indicates strong outgoing coupling: the file depends on many others. This makes isolated testing harder and increases the likelihood of breaking when any dependency changes.</p>`,
     thresholds: [{ label: '≥ 10 imports', cls: 'med' }],
   },
   'fan-in': {
     icon: '←',
-    title: 'Fan-in — Dependências de Entrada',
-    desc: `<p>Quantidade de <strong>módulos que importam este arquivo</strong>.</p>
-           <p>Alto fan-in significa que muitos outros módulos dependem deste. Mudanças nele podem propagar impactos por toda a base de código. Quando combinado com alto fan-out, forma um <em>Hub</em> — ponto crítico de acoplamento.</p>`,
+    title: 'Fan-in — Incoming Dependencies',
+    desc: `<p>Number of <strong>modules that import this file</strong>.</p>
+           <p>High fan-in means many other modules depend on this one. Changes to it can propagate impacts throughout the codebase. When combined with high fan-out, it forms a <em>Hub</em> — a critical coupling point.</p>`,
     thresholds: [{ label: `≥ 3 fan-in (Hub: total ≥ 8)`, cls: 'med' }],
   },
   'fan-out': {
     icon: '→',
-    title: 'Fan-out — Dependências de Saída',
-    desc: `<p>Quantidade de <strong>módulos que este arquivo importa</strong> diretamente.</p>
-           <p>Alto fan-out indica que o módulo depende de muitas partes do sistema. Quando combinado com alto fan-in, forma um <em>Hub</em> — ponto crítico de acoplamento bidirecional.</p>`,
+    title: 'Fan-out — Outgoing Dependencies',
+    desc: `<p>Number of <strong>modules this file imports</strong> directly.</p>
+           <p>High fan-out indicates the module depends on many parts of the system. When combined with high fan-in, it forms a <em>Hub</em> — a critical bidirectional coupling point.</p>`,
     thresholds: [{ label: `≥ 3 fan-out (Hub: total ≥ 8)`, cls: 'med' }],
   },
   named: {
     icon: '⇄',
-    title: 'Símbolos Importados',
-    desc: `<p>Total de <strong>símbolos nomeados</strong> importados via destructuring <code>{ a, b, c }</code> em todos os imports do arquivo.</p>
-           <p>Alta contagem indica que o componente consome fortemente as interfaces de seus dependentes, tornando-o frágil a mudanças nas APIs externas.</p>`,
-    thresholds: [{ label: '≥ 15 símbolos', cls: 'med' }, { label: '≥ 30 símbolos', cls: 'high' }],
+    title: 'Imported Symbols',
+    desc: `<p>Total number of <strong>named symbols</strong> imported via destructuring <code>{ a, b, c }</code> across all imports in the file.</p>
+           <p>A high count indicates the component heavily consumes its dependencies' interfaces, making it fragile to changes in external APIs.</p>`,
+    thresholds: [{ label: '≥ 15 symbols', cls: 'med' }, { label: '≥ 30 symbols', cls: 'high' }],
   },
   max: {
     icon: '↗',
-    title: 'Máx. de uma Dependência',
-    desc: `<p>O maior número de símbolos importados de <strong>uma única dependência</strong>.</p>
-           <p>Indica acoplamento forte e específico — o componente depende intensamente de um único módulo. Se esse módulo mudar sua API, o impacto será grande.</p>`,
-    thresholds: [{ label: '≥ 6 símbolos', cls: 'med' }, { label: '≥ 10 símbolos', cls: 'high' }],
+    title: 'Max from One Dependency',
+    desc: `<p>The largest number of symbols imported from <strong>a single dependency</strong>.</p>
+           <p>Indicates strong and specific coupling — the component depends heavily on a single module. If that module changes its API, the impact will be significant.</p>`,
+    thresholds: [{ label: '≥ 6 symbols', cls: 'med' }, { label: '≥ 10 symbols', cls: 'high' }],
   },
   freq: {
     icon: '↻',
-    title: 'Commits — Frequência de Mudanças',
-    desc: `<p>Número de <strong>commits que modificaram este arquivo</strong> no histórico git.</p>
-           <p>Alta frequência de mudanças em um arquivo grande é o sinal clássico de <em>hotspot</em>: uma área do sistema que o time precisa tocar constantemente, acumulando dívida técnica.</p>
-           <p>Gere o arquivo com: <code>git log --pretty=format:"%H %ai %an" --numstat > commits.txt</code></p>`,
+    title: 'Commits — Change Frequency',
+    desc: `<p>Number of <strong>commits that modified this file</strong> in the git history.</p>
+           <p>High change frequency in a large file is the classic hotspot signal: an area of the system the team needs to touch constantly, accumulating technical debt.</p>
+           <p>Generate the file with: <code>git log --pretty=format:"%H %ai %an" --numstat > commits.txt</code></p>`,
     thresholds: [{ label: '≥ 10 commits', cls: 'med' }, { label: '≥ 25 commits', cls: 'high' }],
   },
   centrality: {
     icon: '⟺',
-    title: 'Centralidade — Importância na Rede',
-    desc: `<p>Soma de <strong>fan-in + fan-out</strong> do módulo. Mede o quão central ele é na rede de dependências do projeto.</p>
-           <p>Alta centralidade significa que o módulo conecta muitas partes do sistema. Quando combinada com alta frequência de mudanças e grande tamanho, indica um <em>Architectural Hotspot</em> — o risco arquitetural mais grave.</p>`,
-    thresholds: [{ label: '≥ 8 conexões', cls: 'med' }, { label: '≥ 15 conexões', cls: 'high' }],
+    title: 'Centrality — Network Importance',
+    desc: `<p>Sum of <strong>fan-in + fan-out</strong> for the module. Measures how central it is in the project's dependency network.</p>
+           <p>High centrality means the module connects many parts of the system. When combined with high change frequency and large size, it indicates an <em>Architectural Hotspot</em> — the most severe architectural risk.</p>`,
+    thresholds: [{ label: '≥ 8 connections', cls: 'med' }, { label: '≥ 15 connections', cls: 'high' }],
   },
   deps: {
     icon: '🔗',
-    title: 'Dependências — Total de Arestas',
-    desc: `<p>Número total de <strong>conexões direcionadas únicas</strong> entre arquivos do projeto — ou seja, cada relação "<em>arquivo A importa arquivo B</em>" resolvida com sucesso conta como uma dependência.</p>
-           <p>Importações duplicadas dentro do mesmo arquivo são contadas apenas uma vez (o grafo usa <code>Set</code> internamente). Imports para bibliotecas externas ou caminhos não resolvidos <strong>não</strong> são incluídos.</p>
-           <p>Esse número representa o tamanho do grafo de dependências e dá uma ideia geral do <strong>nível de acoplamento</strong> do projeto.</p>`,
+    title: 'Dependencies — Total Edges',
+    desc: `<p>Total number of <strong>unique directed connections</strong> between project files — i.e., each successfully resolved "<em>file A imports file B</em>" relationship counts as one dependency.</p>
+           <p>Duplicate imports within the same file are counted only once (the graph uses <code>Set</code> internally). Imports to external libraries or unresolved paths are <strong>not</strong> included.</p>
+           <p>This number represents the size of the dependency graph and gives a general idea of the project's <strong>coupling level</strong>.</p>`,
     thresholds: [],
   },
 };
@@ -179,7 +179,7 @@ function openMetricModal(key) {
 
   const thresholdsHtml = info.thresholds?.length
     ? `<div class="mi-thresholds">
-         <div class="mi-thresholds-title">Limiares de detecção</div>
+         <div class="mi-thresholds-title">Detection thresholds</div>
          <div class="mi-thr-row">
            ${info.thresholds.map(t => `<span class="mi-thr-chip ${t.cls}">${resolveThresholdLabel(t.label)}</span>`).join('')}
          </div>
@@ -216,29 +216,29 @@ function renderCycleList() {
 
   if (state.cyclicSCCs.length === 0) {
     el.innerHTML = `<div class="threshold-info">
-        Detectado via algoritmo de Tarjan (SCC ≥ 2 nós)
+        Detected via Tarjan's algorithm (SCC ≥ 2 nodes)
       </div>
       <div class="no-results">
         <div class="no-results-icon">✅</div>
-        <strong>Nenhum ciclo detectado!</strong>
-        <p style="margin-top:8px;font-size:12px">O código não apresenta dependências cíclicas.</p>
+        <strong>No cycles detected!</strong>
+        <p style="margin-top:8px;font-size:12px">The code has no cyclic dependencies.</p>
       </div>`;
     return;
   }
 
   el.innerHTML = `<div class="threshold-info">
-    Algoritmo de Tarjan — reporta ciclos com ≥ 2 módulos · Severidade por tamanho do ciclo: ≥ 5 módulos = ALTO · ≥ 3 = MÉDIO · 2 módulos = BAIXO
+    Tarjan's algorithm — reports cycles with ≥ 2 modules · Severity by cycle size: ≥ 5 modules = HIGH · ≥ 3 = MEDIUM · 2 modules = LOW
   </div>`;
   state.cyclicSCCs.forEach((scc, i) => {
     const sev   = scc.length >= 5 ? 'high' : scc.length >= 3 ? 'medium' : 'low';
-    const label = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev];
+    const label = { high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }[sev];
     const path  = findCyclePath(scc);
     const names = path.map(p => p.split('/').pop());
 
     const pathHtml = names.map((n, k) =>
       k < names.length - 1
         ? `<div class="path-module"><span>${n}</span></div><div class="path-arrow">↓</div>`
-        : `<div class="path-module"><span>${n}</span></div><div class="path-return">↩ volta para ${names[0]}</div>`
+        : `<div class="path-module"><span>${n}</span></div><div class="path-return">↩ back to ${names[0]}</div>`
     ).join('');
 
     const card = document.createElement('div');
@@ -247,8 +247,8 @@ function renderCycleList() {
     card.innerHTML =
       `<div class="card-head">
          <span class="sev-badge sev-${sev}">${label}</span>
-         <span class="card-title">Ciclo #${i + 1}</span>
-         <span class="card-count">${scc.length} módulo${scc.length > 1 ? 's' : ''}</span>
+         <span class="card-title">Cycle #${i + 1}</span>
+         <span class="card-count">${scc.length} module${scc.length > 1 ? 's' : ''}</span>
        </div>
        <div class="cycle-path">${pathHtml}</div>`;
 
@@ -266,7 +266,7 @@ function renderCycleList() {
 function renderHubList() {
   const el = document.getElementById('smellList');
   el.innerHTML = `<div class="threshold-info">
-    Limiar: fan-in ≥ <strong>${thresholds.HUB_MIN_IN}</strong> · fan-out ≥ <strong>${thresholds.HUB_MIN_OUT}</strong> · total ≥ <strong>${thresholds.HUB_MIN_TOTAL}</strong>
+    Threshold: fan-in ≥ <strong>${thresholds.HUB_MIN_IN}</strong> · fan-out ≥ <strong>${thresholds.HUB_MIN_OUT}</strong> · total ≥ <strong>${thresholds.HUB_MIN_TOTAL}</strong>
   </div>`;
 
   // Build metrics for ALL files
@@ -293,7 +293,7 @@ function renderHubList() {
     const isCycle  = state.cycleNodes.has(path);
 
     const badgeHtml = isSmelly
-      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }[sev]}</span>`
       : `<span class="sev-badge sev-normal">—</span>`;
 
     const card = document.createElement('div');
@@ -303,22 +303,22 @@ function renderHubList() {
       `<div class="card-head">
          ${badgeHtml}
          <span class="card-title">${name}</span>
-         <span class="card-count">${total} conexões</span>
+         <span class="card-count">${total} connections</span>
        </div>
        <div class="hub-metrics">
          <div class="hub-metric metric-clickable" data-metric="fan-in">
-           <div class="hub-metric-label"><span class="hub-dir-in">←</span> Fan-in <span class="metric-info-btn" aria-label="Saiba mais">i</span></div>
+           <div class="hub-metric-label"><span class="hub-dir-in">←</span> Fan-in <span class="metric-info-btn" aria-label="Learn more">i</span></div>
            <div class="hub-bar-wrap"><div class="hub-bar-fill fan-in" style="width:${inPct}%"></div></div>
            <span class="hub-metric-val">${fanIn}</span>
          </div>
          <div class="hub-metric metric-clickable" data-metric="fan-out">
-           <div class="hub-metric-label"><span class="hub-dir-out">→</span> Fan-out <span class="metric-info-btn" aria-label="Saiba mais">i</span></div>
+           <div class="hub-metric-label"><span class="hub-dir-out">→</span> Fan-out <span class="metric-info-btn" aria-label="Learn more">i</span></div>
            <div class="hub-bar-wrap"><div class="hub-bar-fill fan-out" style="width:${outPct}%"></div></div>
            <span class="hub-metric-val">${fanOut}</span>
          </div>
        </div>
        <div class="hub-path-line">${dir}</div>
-       ${isCycle ? `<div class="hub-also-cycle" style="font-size:10px;color:var(--red);margin-top:4px">⟳ Também participa de um ciclo</div>` : ''}`;
+       ${isCycle ? `<div class="hub-also-cycle" style="font-size:10px;color:var(--red);margin-top:4px">⟳ Also part of a cycle</div>` : ''}`;
 
     if (isSmelly) {
       const smellyIdx = state.hubModules.findIndex(m => m.path === path);
@@ -335,16 +335,16 @@ function renderHubList() {
 // Render — God Component list
 // ─────────────────────────────────────────
 const METRIC_DEFS = [
-  { key: 'loc',  icon: '≡', label: 'LOC',     getter: m => m.loc,         get med() { return thresholds.GOD_LOC_MED;  }, get high() { return thresholds.GOD_LOC_HIGH;  } },
-  { key: 'func', icon: 'ƒ', label: 'Funções',  getter: m => m.funcCount,   get med() { return thresholds.GOD_FUNC_MED; }, get high() { return thresholds.GOD_FUNC_HIGH; } },
-  { key: 'exp',  icon: '↑', label: 'Exports',  getter: m => m.exportCount, get med() { return thresholds.GOD_EXP_MED;  }, get high() { return thresholds.GOD_EXP_HIGH;  } },
-  { key: 'imp',  icon: '↓', label: 'Imports',  getter: m => m.importCount, get med() { return thresholds.GOD_IMP_MIN;  }, high: null },
+  { key: 'loc',  icon: '≡', label: 'LOC',       getter: m => m.loc,         get med() { return thresholds.GOD_LOC_MED;  }, get high() { return thresholds.GOD_LOC_HIGH;  } },
+  { key: 'func', icon: 'ƒ', label: 'Functions', getter: m => m.funcCount,   get med() { return thresholds.GOD_FUNC_MED; }, get high() { return thresholds.GOD_FUNC_HIGH; } },
+  { key: 'exp',  icon: '↑', label: 'Exports',   getter: m => m.exportCount, get med() { return thresholds.GOD_EXP_MED;  }, get high() { return thresholds.GOD_EXP_HIGH;  } },
+  { key: 'imp',  icon: '↓', label: 'Imports',   getter: m => m.importCount, get med() { return thresholds.GOD_IMP_MIN;  }, high: null },
 ];
 
 function renderGodList() {
   const el = document.getElementById('smellList');
   el.innerHTML = `<div class="threshold-info">
-    Limiar: LOC ≥ <strong>${thresholds.GOD_LOC_MED}</strong> · funções ≥ <strong>${thresholds.GOD_FUNC_MED}</strong> · exports ≥ <strong>${thresholds.GOD_EXP_MED}</strong> · imports ≥ <strong>${thresholds.GOD_IMP_MIN}</strong>
+    Threshold: LOC ≥ <strong>${thresholds.GOD_LOC_MED}</strong> · functions ≥ <strong>${thresholds.GOD_FUNC_MED}</strong> · exports ≥ <strong>${thresholds.GOD_EXP_MED}</strong> · imports ≥ <strong>${thresholds.GOD_IMP_MIN}</strong>
   </div>`;
 
   // Build metrics for ALL files
@@ -371,7 +371,7 @@ function renderGodList() {
     const isHub   = state.hubNodePaths.has(path);
 
     const badgeHtml = isSmelly
-      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }[sev]}</span>`
       : `<span class="sev-badge sev-normal">—</span>`;
 
     const metricsHtml = METRIC_DEFS.map(def => {
@@ -382,13 +382,13 @@ function renderGodList() {
         <span class="god-metric-icon">${def.icon}</span>
         <span class="god-metric-label">${def.label}</span>
         <span class="god-metric-val">${val}${levelLabel}</span>
-        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
+        <span class="metric-info-btn" aria-label="Learn more">i</span>
       </div>`;
     }).join('');
 
     const alsoTags = [
-      isCycle ? `<span class="god-also-tag cycle">⟳ Em ciclo</span>` : '',
-      isHub   ? `<span class="god-also-tag hub">◎ É hub</span>`      : '',
+      isCycle ? `<span class="god-also-tag cycle">⟳ In cycle</span>` : '',
+      isHub   ? `<span class="god-also-tag hub">◎ Is hub</span>`     : '',
     ].filter(Boolean).join('');
 
     const card = document.createElement('div');
@@ -419,14 +419,14 @@ function renderGodList() {
 // Render — Chatty Component list
 // ─────────────────────────────────────────
 const CHATTY_METRIC_DEFS = [
-  { key: 'named', icon: '⇄', label: 'Símbolos',    getter: m => m.namedImports, get med() { return thresholds.CHATTY_NAMED_MED; }, get high() { return thresholds.CHATTY_NAMED_HIGH; } },
-  { key: 'max',   icon: '↗', label: 'Max de 1 dep', getter: m => m.maxFromOne,   get med() { return thresholds.CHATTY_MAX_MED;   }, get high() { return thresholds.CHATTY_MAX_HIGH;   } },
+  { key: 'named', icon: '⇄', label: 'Symbols',      getter: m => m.namedImports, get med() { return thresholds.CHATTY_NAMED_MED; }, get high() { return thresholds.CHATTY_NAMED_HIGH; } },
+  { key: 'max',   icon: '↗', label: 'Max from 1 dep', getter: m => m.maxFromOne, get med() { return thresholds.CHATTY_MAX_MED;   }, get high() { return thresholds.CHATTY_MAX_HIGH;   } },
 ];
 
 function renderChattyList() {
   const el = document.getElementById('smellList');
   el.innerHTML = `<div class="threshold-info">
-    Limiar: símbolos totais ≥ <strong>${thresholds.CHATTY_NAMED_MED}</strong> · ou máx. de uma dep ≥ <strong>${thresholds.CHATTY_MAX_MED}</strong>
+    Threshold: total symbols ≥ <strong>${thresholds.CHATTY_NAMED_MED}</strong> · or max from one dep ≥ <strong>${thresholds.CHATTY_MAX_MED}</strong>
   </div>`;
 
   // Build metrics for ALL files
@@ -453,7 +453,7 @@ function renderChattyList() {
     const isGod   = state.godNodePaths.has(path);
 
     const badgeHtml = isSmelly
-      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }[sev]}</span>`
       : `<span class="sev-badge sev-normal">—</span>`;
 
     const metricsHtml = CHATTY_METRIC_DEFS.map(def => {
@@ -464,7 +464,7 @@ function renderChattyList() {
         <span class="chatty-metric-icon">${def.icon}</span>
         <span class="chatty-metric-label">${def.label}</span>
         <span class="chatty-metric-val">${val}${levelLabel}</span>
-        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
+        <span class="metric-info-btn" aria-label="Learn more">i</span>
       </div>`;
     }).join('');
 
@@ -472,12 +472,12 @@ function renderChattyList() {
       ? topDep.split('/').pop().replace(/\.[jt]sx?$/, '')
       : '—';
     const topDepHtml = topDep
-      ? `<div class="chatty-top-dep">↗ Principal: <span>${topDepShort}</span> (${mod.maxFromOne} símbolos)</div>`
+      ? `<div class="chatty-top-dep">↗ Top dep: <span>${topDepShort}</span> (${mod.maxFromOne} symbols)</div>`
       : '';
 
     const alsoTags = [
-      isCycle ? `<span class="chatty-also-tag cycle">⟳ Em ciclo</span>`     : '',
-      isHub   ? `<span class="chatty-also-tag hub">◎ É hub</span>`          : '',
+      isCycle ? `<span class="chatty-also-tag cycle">⟳ In cycle</span>`     : '',
+      isHub   ? `<span class="chatty-also-tag hub">◎ Is hub</span>`         : '',
       isGod   ? `<span class="chatty-also-tag god">⊕ God component</span>`  : '',
     ].filter(Boolean).join('');
 
@@ -520,17 +520,17 @@ function renderHotspotList() {
   if (!state.hasCommits) {
     el.innerHTML = `<div class="no-results">
       <div class="no-results-icon">📄</div>
-      <strong>commits.txt não encontrado</strong>
+      <strong>commits.txt not found</strong>
       <p style="margin-top:8px;font-size:12px">
-        Inclua um arquivo <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">commits.txt</code>
-        na raiz do projeto para habilitar a detecção de Hotspots.
+        Include a <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">commits.txt</code>
+        file in the project root to enable Hotspot detection.
       </p>
     </div>`;
     return;
   }
 
   el.innerHTML = `<div class="threshold-info">
-    Limiar: commits ≥ <strong>${thresholds.HOTSPOT_FREQ_MED}</strong> · LOC ≥ <strong>${thresholds.HOTSPOT_LOC_MED}</strong> (ambos devem ser atingidos)
+    Threshold: commits ≥ <strong>${thresholds.HOTSPOT_FREQ_MED}</strong> · LOC ≥ <strong>${thresholds.HOTSPOT_LOC_MED}</strong> (both must be triggered)
   </div>`;
 
   // Build metrics for ALL files that appear in commits.txt
@@ -555,7 +555,7 @@ function renderHotspotList() {
     const dir    = parts.join('/') || '/';
 
     const badgeHtml = isSmelly
-      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }[sev]}</span>`
       : `<span class="sev-badge sev-normal">—</span>`;
 
     const metricsHtml = HOTSPOT_METRIC_DEFS.map(def => {
@@ -566,7 +566,7 @@ function renderHotspotList() {
         <span class="hotspot-metric-icon">${def.icon}</span>
         <span class="hotspot-metric-label">${def.label}</span>
         <span class="hotspot-metric-val">${val}${levelLabel}</span>
-        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
+        <span class="metric-info-btn" aria-label="Learn more">i</span>
       </div>`;
     }).join('');
 
@@ -574,8 +574,8 @@ function renderHotspotList() {
     const isHub   = state.hubNodePaths.has(path);
     const isGod   = state.godNodePaths.has(path);
     const alsoTags = [
-      isCycle ? `<span class="hotspot-also-tag cycle">⟳ Em ciclo</span>`    : '',
-      isHub   ? `<span class="hotspot-also-tag hub">◎ É hub</span>`         : '',
+      isCycle ? `<span class="hotspot-also-tag cycle">⟳ In cycle</span>`    : '',
+      isHub   ? `<span class="hotspot-also-tag hub">◎ Is hub</span>`        : '',
       isGod   ? `<span class="hotspot-also-tag god">⊕ God component</span>` : '',
     ].filter(Boolean).join('');
 
@@ -589,7 +589,7 @@ function renderHotspotList() {
          <span class="card-count">score ${score}</span>
        </div>
        <div class="hotspot-metrics-grid">${metricsHtml}</div>
-       <div class="hotspot-lines-changed">± ${linesChanged} linhas alteradas no total</div>
+       <div class="hotspot-lines-changed">± ${linesChanged} total lines changed</div>
        <div class="hotspot-path-line">${dir}</div>
        ${alsoTags ? `<div class="hotspot-also">${alsoTags}</div>` : ''}`;
 
@@ -608,9 +608,9 @@ function renderHotspotList() {
 // Render — Architectural Hotspot list
 // ─────────────────────────────────────────
 const ARCH_METRIC_DEFS = [
-  { key: 'freq',       icon: '↻', label: 'Commits',      getter: m => m.commitCount, get med() { return thresholds.HOTSPOT_FREQ_MED;    }, get high() { return thresholds.HOTSPOT_FREQ_HIGH;    } },
-  { key: 'centrality', icon: '⟺', label: 'Centralidade', getter: m => m.centrality,  get med() { return thresholds.ARCH_CENTRALITY_MED; }, get high() { return thresholds.ARCH_CENTRALITY_HIGH; } },
-  { key: 'loc',        icon: '≡', label: 'LOC',          getter: m => m.loc,         get med() { return thresholds.HOTSPOT_LOC_MED;     }, get high() { return thresholds.HOTSPOT_LOC_HIGH;     } },
+  { key: 'freq',       icon: '↻', label: 'Commits',     getter: m => m.commitCount, get med() { return thresholds.HOTSPOT_FREQ_MED;    }, get high() { return thresholds.HOTSPOT_FREQ_HIGH;    } },
+  { key: 'centrality', icon: '⟺', label: 'Centrality',  getter: m => m.centrality,  get med() { return thresholds.ARCH_CENTRALITY_MED; }, get high() { return thresholds.ARCH_CENTRALITY_HIGH; } },
+  { key: 'loc',        icon: '≡', label: 'LOC',         getter: m => m.loc,         get med() { return thresholds.HOTSPOT_LOC_MED;     }, get high() { return thresholds.HOTSPOT_LOC_HIGH;     } },
 ];
 
 function renderArchList() {
@@ -619,17 +619,17 @@ function renderArchList() {
   if (!state.hasCommits) {
     el.innerHTML = `<div class="no-results">
       <div class="no-results-icon">📄</div>
-      <strong>commits.txt não encontrado</strong>
+      <strong>commits.txt not found</strong>
       <p style="margin-top:8px;font-size:12px">
-        Inclua um arquivo <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">commits.txt</code>
-        na raiz do projeto para habilitar a detecção de Architectural Hotspots.
+        Include a <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">commits.txt</code>
+        file in the project root to enable Architectural Hotspot detection.
       </p>
     </div>`;
     return;
   }
 
   el.innerHTML = `<div class="threshold-info">
-    Limiar: commits ≥ <strong>${thresholds.HOTSPOT_FREQ_MED}</strong> · centralidade ≥ <strong>${thresholds.ARCH_CENTRALITY_MED}</strong> · LOC ≥ <strong>${thresholds.HOTSPOT_LOC_MED}</strong>
+    Threshold: commits ≥ <strong>${thresholds.HOTSPOT_FREQ_MED}</strong> · centrality ≥ <strong>${thresholds.ARCH_CENTRALITY_MED}</strong> · LOC ≥ <strong>${thresholds.HOTSPOT_LOC_MED}</strong>
   </div>`;
 
   // Build metrics for ALL files that appear in commits.txt
@@ -657,7 +657,7 @@ function renderArchList() {
     const dir    = parts.join('/') || '/';
 
     const badgeHtml = isSmelly
-      ? `<span class="sev-badge sev-${sev}">${{ high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' }[sev]}</span>`
+      ? `<span class="sev-badge sev-${sev}">${{ high: 'HIGH', medium: 'MEDIUM', low: 'LOW' }[sev]}</span>`
       : `<span class="sev-badge sev-normal">—</span>`;
 
     const metricsHtml = ARCH_METRIC_DEFS.map(def => {
@@ -668,7 +668,7 @@ function renderArchList() {
         <span class="arch-metric-icon">${def.icon}</span>
         <span class="arch-metric-label">${def.label}</span>
         <span class="arch-metric-val">${val}${levelLabel}</span>
-        <span class="metric-info-btn" aria-label="Saiba mais">i</span>
+        <span class="metric-info-btn" aria-label="Learn more">i</span>
       </div>`;
     }).join('');
 
@@ -681,8 +681,8 @@ function renderArchList() {
     const isCycle = state.cycleNodes.has(path);
     const isHub   = state.hubNodePaths.has(path);
     const alsoTags = [
-      isCycle ? `<span class="arch-also-tag cycle">⟳ Em ciclo</span>` : '',
-      isHub   ? `<span class="arch-also-tag hub">◎ É hub</span>`      : '',
+      isCycle ? `<span class="arch-also-tag cycle">⟳ In cycle</span>` : '',
+      isHub   ? `<span class="arch-also-tag hub">◎ Is hub</span>`     : '',
     ].filter(Boolean).join('');
 
     const card = document.createElement('div');
@@ -714,7 +714,7 @@ function renderArchList() {
 // Table renders
 // One per smell; fall back to card render when list is empty / commits absent.
 // ─────────────────────────────────────────
-const SEV_LABEL = { high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' };
+const SEV_LABEL = { high: 'HIGH', medium: 'MEDIUM', low: 'LOW' };
 
 // Shared helper — builds the <table> HTML and injects it into el
 function buildTable(el, cols, rows) {
@@ -746,7 +746,7 @@ function renderCycleTable() {
 
   buildTable(el, [
     { label: '#', w: '28px' },
-    { label: 'Módulos' },
+    { label: 'Modules' },
     { label: 'N', r: true, w: '28px' },
     { label: 'Sev', w: '60px' },
   ], rows);
@@ -775,7 +775,7 @@ function renderHubTable() {
   ).join('');
 
   buildTable(el, [
-    { label: 'Arquivo' },
+    { label: 'File' },
     { label: 'In',    r: true, w: '34px' },
     { label: 'Out',   r: true, w: '34px' },
     { label: 'Total', r: true, w: '44px' },
@@ -812,7 +812,7 @@ function renderGodTable() {
   ).join('');
 
   buildTable(el, [
-    { label: 'Arquivo' },
+    { label: 'File' },
     { label: 'LOC',   r: true, w: '42px' },
     { label: 'ƒ',     r: true, w: '28px' },
     { label: '↑',     r: true, w: '28px' },
@@ -848,8 +848,8 @@ function renderChattyTable() {
   ).join('');
 
   buildTable(el, [
-    { label: 'Arquivo' },
-    { label: 'Símbolos', r: true, w: '60px' },
+    { label: 'File' },
+    { label: 'Symbols', r: true, w: '60px' },
     { label: 'Max 1',   r: true, w: '46px' },
     { label: 'Score',   r: true, w: '44px' },
     { label: 'Sev', w: '60px' },
@@ -884,7 +884,7 @@ function renderHotspotTable() {
   ).join('');
 
   buildTable(el, [
-    { label: 'Arquivo' },
+    { label: 'File' },
     { label: 'Commits', r: true, w: '54px' },
     { label: 'LOC',     r: true, w: '42px' },
     { label: 'Score',   r: true, w: '44px' },
@@ -923,7 +923,7 @@ function renderArchTable() {
   ).join('');
 
   buildTable(el, [
-    { label: 'Arquivo' },
+    { label: 'File' },
     { label: 'Commits',  r: true, w: '54px' },
     { label: 'Central.', r: true, w: '54px' },
     { label: 'LOC',      r: true, w: '42px' },
@@ -976,12 +976,12 @@ function setSmell(smell) {
   renderGraph();
 
   const cfg = {
-    cyclic:  { title: 'Ciclos Detectados',                 cls: 'cyclic',  count: state.cyclicSCCs.length         },
-    hub:     { title: 'Hubs Detectados',                   cls: 'hub',     count: state.hubModules.length         },
-    god:     { title: 'God Components Detectados',         cls: 'god',     count: state.godModules.length         },
-    chatty:  { title: 'Chatty Components Detectados',      cls: 'chatty',  count: state.chattyModules.length      },
-    hotspot: { title: 'Hotspots Detectados',               cls: 'hotspot', count: state.hotspotModules.length     },
-    arch:    { title: 'Architectural Hotspots Detectados', cls: 'arch',    count: state.archHotspotModules.length },
+    cyclic:  { title: 'Detected Cycles',               cls: 'cyclic',  count: state.cyclicSCCs.length         },
+    hub:     { title: 'Detected Hubs',                 cls: 'hub',     count: state.hubModules.length         },
+    god:     { title: 'Detected God Components',       cls: 'god',     count: state.godModules.length         },
+    chatty:  { title: 'Detected Chatty Components',    cls: 'chatty',  count: state.chattyModules.length      },
+    hotspot: { title: 'Detected Hotspots',             cls: 'hotspot', count: state.hotspotModules.length     },
+    arch:    { title: 'Detected Architectural Hotspots', cls: 'arch',  count: state.archHotspotModules.length },
   }[smell];
 
   document.getElementById('listTitle').textContent = cfg.title;
@@ -995,14 +995,14 @@ function setSmell(smell) {
 // ─────────────────────────────────────────
 function updateStats() {
   const s = {
-    cyclic:  { c3: 'danger',   v3: state.cyclicSCCs.length,          l3: 'Ciclos',
-               c4: 'warning',  v4: state.cycleNodes.size,             l4: 'Módulos Afetados' },
+    cyclic:  { c3: 'danger',   v3: state.cyclicSCCs.length,          l3: 'Cycles',
+               c4: 'warning',  v4: state.cycleNodes.size,             l4: 'Affected Modules' },
     hub:     { c3: 'warning',  v3: state.hubModules.length,           l3: 'Hubs',
-               c4: 'info',     v4: state.hubModules[0]?.total ?? 0,   l4: 'Max Conexões' },
+               c4: 'info',     v4: state.hubModules[0]?.total ?? 0,   l4: 'Max Connections' },
     god:     { c3: 'teal',     v3: state.godModules.length,           l3: 'God Components',
                c4: 'teal',     v4: state.godModules[0]?.score ?? 0,   l4: 'Max Score' },
     chatty:  { c3: 'yellow',   v3: state.chattyModules.length,        l3: 'Chatty Components',
-               c4: 'yellow',   v4: state.chattyModules[0]?.namedImports ?? 0, l4: 'Max Símbolos' },
+               c4: 'yellow',   v4: state.chattyModules[0]?.namedImports ?? 0, l4: 'Max Symbols' },
     hotspot: { c3: 'coral',    v3: state.hotspotModules.length,       l3: 'Hotspots',
                c4: 'coral',    v4: state.hotspotModules[0]?.commitCount ?? 0, l4: 'Max Commits' },
     arch:    { c3: 'magenta',  v3: state.archHotspotModules.length,   l3: 'Arch Hotspots',
@@ -1023,16 +1023,16 @@ function updateStats() {
 // ─────────────────────────────────────────
 function updateViewToggles() {
   const cfg = {
-    cyclic:  { view: 'cycles',    label: 'Apenas Ciclos'            },
-    hub:     { view: 'hubs',      label: 'Apenas Hubs'              },
-    god:     { view: 'gods',      label: 'Apenas God Components'    },
-    chatty:  { view: 'chatty',    label: 'Apenas Chatty Components' },
-    hotspot: { view: 'hotspots',  label: 'Apenas Hotspots'          },
-    arch:    { view: 'archs',     label: 'Apenas Arch Hotspots'     },
+    cyclic:  { view: 'cycles',    label: 'Cycles Only'            },
+    hub:     { view: 'hubs',      label: 'Hubs Only'              },
+    god:     { view: 'gods',      label: 'God Components Only'    },
+    chatty:  { view: 'chatty',    label: 'Chatty Components Only' },
+    hotspot: { view: 'hotspots',  label: 'Hotspots Only'          },
+    arch:    { view: 'archs',     label: 'Arch Hotspots Only'     },
   }[state.currentSmell];
 
   document.getElementById('viewToggleGroup').innerHTML =
-    `<button class="toggle ${state.currentView === 'all'     ? 'active' : ''}" data-view="all">${'Todos os Módulos'}</button>
+    `<button class="toggle ${state.currentView === 'all'     ? 'active' : ''}" data-view="all">${'All Modules'}</button>
      <button class="toggle ${state.currentView === cfg.view  ? 'active' : ''}" data-view="${cfg.view}">${cfg.label}</button>`;
 }
 
@@ -1120,7 +1120,7 @@ function renderReport() {
     if (na) {
       return `<tr>
       <td class="rpt-smell"><span class="rpt-dot rpt-dot-${r.color}"></span>${r.icon} ${r.label}</td>
-      <td class="rpt-na" colspan="5">git log não encontrado</td>
+      <td class="rpt-na" colspan="5">git log not found</td>
     </tr>`;
     }
     return `<tr>
@@ -1135,19 +1135,19 @@ function renderReport() {
 
   const html =
     `<div class="rpt-meta">
-       <span class="rpt-meta-item">📁 ${s.fileMap.size} arquivos analisados</span>
-       <span class="rpt-meta-item">🔗 ${Array.from(s.depGraph.values()).reduce((a,s)=>a+s.size,0)} dependências</span>
-       ${s.hasCommits ? '<span class="rpt-meta-item">📜 commits.txt incluído</span>' : '<span class="rpt-meta-item rpt-meta-warn">⚠ sem commits.txt</span>'}
+       <span class="rpt-meta-item">📁 ${s.fileMap.size} files analysed</span>
+       <span class="rpt-meta-item">🔗 ${Array.from(s.depGraph.values()).reduce((a,s)=>a+s.size,0)} dependencies</span>
+       ${s.hasCommits ? '<span class="rpt-meta-item">📜 commits.txt included</span>' : '<span class="rpt-meta-item rpt-meta-warn">⚠ no commits.txt</span>'}
      </div>
      <table class="rpt-table">
        <thead>
          <tr>
            <th>Smell</th>
            <th class="rpt-num">Total</th>
-           <th class="rpt-num rpt-high">Alto</th>
-           <th class="rpt-num rpt-med">Médio</th>
-           <th class="rpt-num rpt-low">Baixo</th>
-           <th class="rpt-num">Arquivos</th>
+           <th class="rpt-num rpt-high">High</th>
+           <th class="rpt-num rpt-med">Medium</th>
+           <th class="rpt-num rpt-low">Low</th>
+           <th class="rpt-num">Files</th>
          </tr>
        </thead>
        <tbody>${bodyRows}</tbody>
@@ -1162,7 +1162,7 @@ function renderReport() {
          </tr>
        </tfoot>
      </table>
-     <p class="rpt-note">* "Arquivos" = arquivos-fonte únicos afetados por cada smell. O total da coluna é a união de todos os smells.</p>`;
+     <p class="rpt-note">* "Files" = unique source files affected by each smell. The column total is the union across all smells.</p>`;
 
   document.getElementById('reportBody').innerHTML = html;
   document.getElementById('reportModal').style.display = 'flex';
@@ -1172,14 +1172,14 @@ function buildReportText() {
   const s = state;
   const has = s.hasCommits;
   const lines = [
-    'RELATÓRIO DE ARCHITECTURE SMELLS',
-    '=================================',
-    `Arquivos analisados : ${s.fileMap.size}`,
-    `Dependências        : ${Array.from(s.depGraph.values()).reduce((a,s)=>a+s.size,0)}`,
-    `commits.txt         : ${has ? 'sim' : 'não'}`,
+    'ARCHITECTURE SMELLS REPORT',
+    '==========================',
+    `Files analysed      : ${s.fileMap.size}`,
+    `Dependencies        : ${Array.from(s.depGraph.values()).reduce((a,s)=>a+s.size,0)}`,
+    `commits.txt         : ${has ? 'yes' : 'no'}`,
     '',
-    'Smell                  | Total | Alto | Médio | Baixo | Arquivos',
-    '-----------------------+-------+------+-------+-------+---------',
+    'Smell                  | Total | High | Medium | Low   | Files',
+    '-----------------------+-------+------+--------+-------+-------',
   ];
   const rows = [
     { label: 'Cyclic Dependency',  total: s.cyclicSCCs.length,              files: s.cycleNodes.size,          modules: s.cyclicSCCs },
@@ -1199,7 +1199,7 @@ function buildReportText() {
     const pad = (v, w) => String(v).padStart(w);
     lines.push(
       r.label.padEnd(22) + ' | ' + pad(t,5) + ' | ' + pad(sev.h||'–',4) + ' | ' +
-      pad(sev.m||'–',5) + ' | ' + pad(sev.l||'–',5) + ' | ' + pad(r.files||'–',7)
+      pad(sev.m||'–',6) + ' | ' + pad(sev.l||'–',5) + ' | ' + pad(r.files||'–',5)
     );
   });
   return lines.join('\n');
@@ -1231,7 +1231,7 @@ function buildReportLatex() {
 
   const bodyRows = rows.map(r => {
     if (r.total === null) {
-      return `${escape(r.label)} & -- & \\multicolumn{3}{c|}{git log n\\~{a}o encontrado} & -- \\\\`;
+      return `${escape(r.label)} & -- & \\multicolumn{3}{c|}{git log not found} & -- \\\\`;
     }
     const sev = { high: 0, medium: 0, low: 0 };
     r.modules.forEach(m => { sev[sevOf(m, r.cyclic)]++; });
@@ -1240,18 +1240,18 @@ function buildReportLatex() {
 
   const depCount = Array.from(s.depGraph.values()).reduce((a, v) => a + v.size, 0);
   const commitsLine = has
-    ? '% commits.txt: sim'
-    : '% commits.txt: n\\~{a}o (execute: git log --pretty=format:"\\%H \\%ai \\%an" --numstat > commits.txt)';
+    ? '% commits.txt: yes'
+    : '% commits.txt: no (run: git log --pretty=format:"\\%H \\%ai \\%an" --numstat > commits.txt)';
 
   const footerRow =
-    `\\multicolumn{3}{l|}{\\small Arquivos analisados: ${s.fileMap.size}} & ` +
-    `\\multicolumn{3}{r}{\\small Depend\\^{e}ncias: ${depCount}} \\\\`;
+    `\\multicolumn{3}{l|}{\\small Files analysed: ${s.fileMap.size}} & ` +
+    `\\multicolumn{3}{r}{\\small Dependencies: ${depCount}} \\\\`;
 
   return [
     commitsLine,
     '\\begin{tabular}{l|r|r|r|r|r}',
     '\\hline',
-    '\\textbf{Smell} & \\textbf{Total} & \\textbf{Alto} & \\textbf{M\\\'edio} & \\textbf{Baixo} & \\textbf{Arquivos} \\\\',
+    '\\textbf{Smell} & \\textbf{Total} & \\textbf{High} & \\textbf{Medium} & \\textbf{Low} & \\textbf{Files} \\\\',
     '\\hline',
     bodyRows,
     '\\hline',
@@ -1287,7 +1287,7 @@ async function handleFiles(files) {
 
     updateStats();
     updateViewToggles();
-    document.getElementById('listTitle').textContent = 'Ciclos Detectados';
+    document.getElementById('listTitle').textContent = 'Detected Cycles';
     document.getElementById('listBadge').className   = 'list-badge cyclic';
     document.getElementById('listBadge').textContent = state.cyclicSCCs.length;
 
@@ -1298,7 +1298,7 @@ async function handleFiles(files) {
 
   } catch (err) {
     console.error(err);
-    alert('Erro ao analisar os arquivos:\n' + err.message);
+    alert('Error analysing files:\n' + err.message);
     showScreen('upload');
   }
 }
@@ -1323,7 +1323,7 @@ document.getElementById('smellList').addEventListener('click', e => {
   if (cell) { e.stopPropagation(); openMetricModal(cell.dataset.metric); }
 });
 
-// Metric info modal — stat cards (e.g. Dependências)
+// Metric info modal — stat cards (e.g. Dependencies)
 document.querySelector('.stats-bar').addEventListener('click', e => {
   const card = e.target.closest('[data-metric]');
   if (card) openMetricModal(card.dataset.metric);
@@ -1356,7 +1356,7 @@ document.getElementById('btnReportCopy').addEventListener('click', () => {
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('btnReportCopy');
     const prev = btn.textContent;
-    btn.textContent = '✓ Copiado!';
+    btn.textContent = '✓ Copied!';
     setTimeout(() => { btn.textContent = prev; }, 1800);
   });
 });
@@ -1365,7 +1365,7 @@ document.getElementById('btnReportLatex').addEventListener('click', () => {
   navigator.clipboard.writeText(tex).then(() => {
     const btn = document.getElementById('btnReportLatex');
     const prev = btn.textContent;
-    btn.textContent = '✓ Copiado!';
+    btn.textContent = '✓ Copied!';
     setTimeout(() => { btn.textContent = prev; }, 1800);
   });
 });

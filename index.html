@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -14,21 +14,21 @@
   <div class="header-icon">🔍</div>
   <h1>Architecture Smell Detector</h1>
   <div class="spacer"></div>
-  <button id="btnReport" style="display:none">📋 Relatório</button>
-  <button id="btnNew">↩ Nova Análise</button>
+  <button id="btnReport" style="display:none">📋 Report</button>
+  <button id="btnNew">↩ New Analysis</button>
 </header>
 
 <!-- ═══════════════════ REPORT MODAL ═══════════════════ -->
-<div id="reportModal" class="report-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Relatório de Architecture Smells">
+<div id="reportModal" class="report-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Architecture Smells Report">
   <div class="report-card">
     <div class="report-header">
-      <span class="report-title">📋 Relatório de Architecture Smells</span>
-      <button class="report-close" id="btnReportClose" aria-label="Fechar">✕</button>
+      <span class="report-title">📋 Architecture Smells Report</span>
+      <button class="report-close" id="btnReportClose" aria-label="Close">✕</button>
     </div>
     <div class="report-body" id="reportBody"></div>
     <div class="report-footer">
-      <button class="report-export-btn" id="btnReportCopy">⎘ Copiar como texto</button>
-      <button class="report-export-btn" id="btnReportLatex">⎘ Copiar como LaTeX</button>
+      <button class="report-export-btn" id="btnReportCopy">⎘ Copy as text</button>
+      <button class="report-export-btn" id="btnReportLatex">⎘ Copy as LaTeX</button>
     </div>
   </div>
 </div>
@@ -39,20 +39,20 @@
   <div id="uploadScreen">
     <div class="dropzone" id="dropzone">
       <div class="dz-icon">📂</div>
-      <h2>Selecione a pasta do projeto</h2>
-      <p>Arraste e solte ou clique para navegar</p>
+      <h2>Select project folder</h2>
+      <p>Drag and drop or click to browse</p>
       <div class="dz-hint">.js &nbsp;·&nbsp; .ts &nbsp;·&nbsp; .jsx &nbsp;·&nbsp; .tsx &nbsp;·&nbsp; .mjs</div>
       <input type="file" id="folderInput" webkitdirectory multiple />
     </div>
     <p class="upload-note">
-      Os arquivos são processados <strong>localmente no navegador</strong>.<br>
-      Nenhum dado é enviado a servidores externos.
+      Files are processed <strong>locally in the browser</strong>.<br>
+      No data is sent to external servers.
     </p>
     <p class="upload-note upload-note-mobile">
-      Seleção de pasta requer Android Chrome ou desktop.<br>
-      iOS Safari não suporta upload de pastas.
+      Folder selection requires Android Chrome or desktop.<br>
+      iOS Safari does not support folder upload.
     </p>
-    <button id="btnSettings" class="btn-settings">⚙ Configurar Limiares</button>
+    <button id="btnSettings" class="btn-settings">⚙ Configure Thresholds</button>
   </div>
 
   <!-- ═══════════════════ SETTINGS MODAL ═══════════════════ -->
@@ -60,28 +60,28 @@
     <div class="settings-card">
       <div class="settings-header">
         <span class="settings-header-icon">⚙</span>
-        <span class="settings-title" id="settingsTitle">Configurar Limiares</span>
-        <button class="settings-close" id="btnSettingsClose" aria-label="Fechar">✕</button>
+        <span class="settings-title" id="settingsTitle">Configure Thresholds</span>
+        <button class="settings-close" id="btnSettingsClose" aria-label="Close">✕</button>
       </div>
 
       <div class="settings-body">
-        <p class="settings-note">As alterações são salvas automaticamente no navegador e aplicadas na próxima análise.</p>
+        <p class="settings-note">Changes are saved automatically in the browser and applied on the next analysis.</p>
 
         <!-- Hub -->
         <div class="settings-group">
           <div class="settings-group-title">
             <span class="sg-dot" style="background:var(--orange)"></span>
             ◎ Hub-Like Dependency
-            <button class="sg-info-btn" data-metric="smell-hub" aria-label="Saiba mais sobre Hub-Like Dependency">ℹ</button>
+            <button class="sg-info-btn" data-metric="smell-hub" aria-label="Learn more about Hub-Like Dependency">ℹ</button>
           </div>
           <div class="settings-fields">
-            <label class="sf-label">Fan-in mínimo
+            <label class="sf-label">Minimum fan-in
               <input class="sf-input" type="number" min="1" data-key="HUB_MIN_IN" />
             </label>
-            <label class="sf-label">Fan-out mínimo
+            <label class="sf-label">Minimum fan-out
               <input class="sf-input" type="number" min="1" data-key="HUB_MIN_OUT" />
             </label>
-            <label class="sf-label">Total mínimo
+            <label class="sf-label">Minimum total
               <input class="sf-input" type="number" min="1" data-key="HUB_MIN_TOTAL" />
             </label>
           </div>
@@ -92,31 +92,31 @@
           <div class="settings-group-title">
             <span class="sg-dot" style="background:var(--teal)"></span>
             ⊕ God Component
-            <button class="sg-info-btn" data-metric="smell-god" aria-label="Saiba mais sobre God Component">ℹ</button>
+            <button class="sg-info-btn" data-metric="smell-god" aria-label="Learn more about God Component">ℹ</button>
           </div>
           <div class="settings-fields">
-            <label class="sf-label">LOC médio (+1pt)
+            <label class="sf-label">LOC medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_LOC_MED" />
             </label>
-            <label class="sf-label">LOC alto (+1pt)
+            <label class="sf-label">LOC high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_LOC_HIGH" />
             </label>
-            <label class="sf-label">Funções médio (+1pt)
+            <label class="sf-label">Functions medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_FUNC_MED" />
             </label>
-            <label class="sf-label">Funções alto (+1pt)
+            <label class="sf-label">Functions high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_FUNC_HIGH" />
             </label>
-            <label class="sf-label">Exports médio (+1pt)
+            <label class="sf-label">Exports medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_EXP_MED" />
             </label>
-            <label class="sf-label">Exports alto (+1pt)
+            <label class="sf-label">Exports high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_EXP_HIGH" />
             </label>
-            <label class="sf-label">Imports mínimo (+1pt)
+            <label class="sf-label">Minimum imports (+1pt)
               <input class="sf-input" type="number" min="1" data-key="GOD_IMP_MIN" />
             </label>
-            <label class="sf-label">Score mínimo p/ flag
+            <label class="sf-label">Min. score to flag
               <input class="sf-input" type="number" min="1" data-key="GOD_MIN_SCORE" />
             </label>
           </div>
@@ -127,22 +127,22 @@
           <div class="settings-group-title">
             <span class="sg-dot" style="background:var(--yellow)"></span>
             ⇄ Chatty Component
-            <button class="sg-info-btn" data-metric="smell-chatty" aria-label="Saiba mais sobre Chatty Component">ℹ</button>
+            <button class="sg-info-btn" data-metric="smell-chatty" aria-label="Learn more about Chatty Component">ℹ</button>
           </div>
           <div class="settings-fields">
-            <label class="sf-label">Símbolos totais médio (+1pt)
+            <label class="sf-label">Total symbols medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="CHATTY_NAMED_MED" />
             </label>
-            <label class="sf-label">Símbolos totais alto (+1pt)
+            <label class="sf-label">Total symbols high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="CHATTY_NAMED_HIGH" />
             </label>
-            <label class="sf-label">Máx. de 1 dep médio (+1pt)
+            <label class="sf-label">Max from 1 dep medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="CHATTY_MAX_MED" />
             </label>
-            <label class="sf-label">Máx. de 1 dep alto (+1pt)
+            <label class="sf-label">Max from 1 dep high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="CHATTY_MAX_HIGH" />
             </label>
-            <label class="sf-label">Score mínimo p/ flag
+            <label class="sf-label">Min. score to flag
               <input class="sf-input" type="number" min="1" data-key="CHATTY_MIN_SCORE" />
             </label>
           </div>
@@ -153,22 +153,22 @@
           <div class="settings-group-title">
             <span class="sg-dot" style="background:var(--coral)"></span>
             🔥 Hotspot
-            <button class="sg-info-btn" data-metric="smell-hotspot" aria-label="Saiba mais sobre Hotspot">ℹ</button>
+            <button class="sg-info-btn" data-metric="smell-hotspot" aria-label="Learn more about Hotspot">ℹ</button>
           </div>
           <div class="settings-fields">
-            <label class="sf-label">Commits médio (+1pt)
+            <label class="sf-label">Commits medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="HOTSPOT_FREQ_MED" />
             </label>
-            <label class="sf-label">Commits alto (+1pt)
+            <label class="sf-label">Commits high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="HOTSPOT_FREQ_HIGH" />
             </label>
-            <label class="sf-label">LOC médio (+1pt)
+            <label class="sf-label">LOC medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="HOTSPOT_LOC_MED" />
             </label>
-            <label class="sf-label">LOC alto (+1pt)
+            <label class="sf-label">LOC high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="HOTSPOT_LOC_HIGH" />
             </label>
-            <label class="sf-label">Score mínimo p/ flag
+            <label class="sf-label">Min. score to flag
               <input class="sf-input" type="number" min="1" data-key="HOTSPOT_MIN_SCORE" />
             </label>
           </div>
@@ -179,16 +179,16 @@
           <div class="settings-group-title">
             <span class="sg-dot" style="background:var(--magenta)"></span>
             ⬡ Arch Hotspot
-            <button class="sg-info-btn" data-metric="smell-arch" aria-label="Saiba mais sobre Architectural Hotspot">ℹ</button>
+            <button class="sg-info-btn" data-metric="smell-arch" aria-label="Learn more about Architectural Hotspot">ℹ</button>
           </div>
           <div class="settings-fields">
-            <label class="sf-label">Centralidade médio (+1pt)
+            <label class="sf-label">Centrality medium (+1pt)
               <input class="sf-input" type="number" min="1" data-key="ARCH_CENTRALITY_MED" />
             </label>
-            <label class="sf-label">Centralidade alto (+1pt)
+            <label class="sf-label">Centrality high (+1pt)
               <input class="sf-input" type="number" min="1" data-key="ARCH_CENTRALITY_HIGH" />
             </label>
-            <label class="sf-label">Score mínimo p/ flag
+            <label class="sf-label">Min. score to flag
               <input class="sf-input" type="number" min="1" data-key="ARCH_MIN_SCORE" />
             </label>
           </div>
@@ -196,7 +196,7 @@
       </div>
 
       <div class="settings-footer">
-        <button class="settings-reset-btn" id="btnSettingsReset">↺ Restaurar padrões</button>
+        <button class="settings-reset-btn" id="btnSettingsReset">↺ Restore defaults</button>
       </div>
     </div>
   </div>
@@ -204,7 +204,7 @@
   <!-- ─── LOADING SCREEN ─── -->
   <div id="loadingScreen">
     <div class="spinner"></div>
-    <p id="loadingText">Lendo arquivos…</p>
+    <p id="loadingText">Reading files…</p>
   </div>
 
   <!-- ─── RESULTS SCREEN ─── -->
@@ -242,19 +242,19 @@
     <div class="stats-bar">
       <div class="stat-card">
         <div class="stat-value" id="statFiles">0</div>
-        <div class="stat-label">Arquivos</div>
+        <div class="stat-label">Files</div>
       </div>
-      <div class="stat-card stat-card-clickable" data-metric="deps" title="Clique para saber mais">
+      <div class="stat-card stat-card-clickable" data-metric="deps" title="Click to learn more">
         <div class="stat-value" id="statDeps">0</div>
-        <div class="stat-label">Dependências <span class="metric-info-btn" aria-label="Saiba mais">i</span></div>
+        <div class="stat-label">Dependencies <span class="metric-info-btn" aria-label="Learn more">i</span></div>
       </div>
       <div class="stat-card" id="statCard3">
         <div class="stat-value" id="statVal3">0</div>
-        <div class="stat-label" id="statLbl3">Ciclos</div>
+        <div class="stat-label" id="statLbl3">Cycles</div>
       </div>
       <div class="stat-card" id="statCard4">
         <div class="stat-value" id="statVal4">0</div>
-        <div class="stat-label" id="statLbl4">Módulos Afetados</div>
+        <div class="stat-label" id="statLbl4">Affected Modules</div>
       </div>
     </div>
 
@@ -264,12 +264,12 @@
         <!-- populated by updateViewToggles() -->
       </div>
       <div class="zoom-controls">
-        <button class="zoom-btn" data-zoom="in"    title="Ampliar">+</button>
-        <button class="zoom-btn" data-zoom="out"   title="Reduzir">−</button>
-        <button class="zoom-btn" data-zoom="reset" title="Resetar zoom">⌖</button>
+        <button class="zoom-btn" data-zoom="in"    title="Zoom in">+</button>
+        <button class="zoom-btn" data-zoom="out"   title="Zoom out">−</button>
+        <button class="zoom-btn" data-zoom="reset" title="Reset zoom">⌖</button>
       </div>
-      <span class="ctrl-info ctrl-info-desktop">Scroll para zoom &nbsp;·&nbsp; Arraste para mover &nbsp;·&nbsp; Clique para destacar</span>
-      <span class="ctrl-info ctrl-info-mobile">Pinça para zoom &nbsp;·&nbsp; Toque para destacar</span>
+      <span class="ctrl-info ctrl-info-desktop">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Click to highlight</span>
+      <span class="ctrl-info ctrl-info-mobile">Pinch to zoom &nbsp;·&nbsp; Tap to highlight</span>
     </div>
 
     <!-- Content -->
@@ -280,11 +280,11 @@
       </div>
       <div class="list-panel">
         <div class="list-header">
-          <span id="listTitle">Ciclos Detectados</span>
+          <span id="listTitle">Detected Cycles</span>
           <span class="list-badge cyclic" id="listBadge">0</span>
           <div class="list-view-toggle" id="listViewToggle">
-            <button class="lv-btn active" data-list-view="cards" title="Visualização em cards">⊟</button>
-            <button class="lv-btn"        data-list-view="table" title="Visualização em tabela">≣</button>
+            <button class="lv-btn active" data-list-view="cards" title="Card view">⊟</button>
+            <button class="lv-btn"        data-list-view="table" title="Table view">≣</button>
           </div>
         </div>
         <div id="smellList"></div>
@@ -303,7 +303,7 @@
     <div class="mi-header">
       <span class="mi-icon" id="miIcon"></span>
       <span class="mi-title" id="miTitle"></span>
-      <button class="mi-close" id="btnMiClose" aria-label="Fechar">✕</button>
+      <button class="mi-close" id="btnMiClose" aria-label="Close">✕</button>
     </div>
     <div class="mi-body" id="miBody"></div>
   </div>

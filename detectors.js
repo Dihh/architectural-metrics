@@ -326,14 +326,14 @@ export async function analyseFiles(files, onProgress) {
       return [norm, txt];
     });
 
-  onProgress('Lendo ' + arr.length + ' arquivo(s)…');
+  onProgress('Reading ' + arr.length + ' file(s)…');
   const entries = await Promise.all(promises);
   for (const [p, c] of entries) {
     state.fileMap.set(p, c);
     state.depGraph.set(p, new Set());
   }
 
-  onProgress('Construindo grafo de dependências…'); await tick();
+  onProgress('Building dependency graph…'); await tick();
 
   let totalDeps = 0;
   for (const [fp, content] of state.fileMap) {
@@ -348,7 +348,7 @@ export async function analyseFiles(files, onProgress) {
     }
   }
 
-  onProgress('Detectando Cyclic Dependencies…'); await tick();
+  onProgress('Detecting Cyclic Dependencies…'); await tick();
   const allSCCs = tarjanSCC(state.depGraph);
   state.cyclicSCCs = allSCCs.filter(s => s.length > 1);
   for (const [p, deps] of state.depGraph) {
@@ -368,27 +368,27 @@ export async function analyseFiles(files, onProgress) {
     }
   }
 
-  onProgress('Detectando Hub-Like Dependencies…'); await tick();
+  onProgress('Detecting Hub-Like Dependencies…'); await tick();
   detectHubs();
 
-  onProgress('Detectando God Components…'); await tick();
+  onProgress('Detecting God Components…'); await tick();
   detectGodComponents();
 
-  onProgress('Detectando Chatty Components…'); await tick();
+  onProgress('Detecting Chatty Components…'); await tick();
   detectChattyComponents();
 
   // ── Optional: commits.txt ──────────────────────────────
   const commitsFile = arr.find(f => f.name === 'commits.txt');
   if (commitsFile) {
-    onProgress('Lendo commits.txt…'); await tick();
+    onProgress('Reading commits.txt…'); await tick();
     const commitsText = await readText(commitsFile);
     state.commitData  = parseCommitsTxt(commitsText);
     state.hasCommits  = true;
 
-    onProgress('Detectando Hotspots…'); await tick();
+    onProgress('Detecting Hotspots…'); await tick();
     detectHotspots();
 
-    onProgress('Detectando Architectural Hotspots…'); await tick();
+    onProgress('Detecting Architectural Hotspots…'); await tick();
     detectArchHotspots();
   }
 
