@@ -4,7 +4,8 @@ import { state, SUPPORTED, SKIP_DIRS } from './state.js';
 // File helpers
 // ─────────────────────────────────────────
 export const isSupported = name => SUPPORTED.some(e => name.endsWith(e));
-export const shouldSkip  = p    => p.split('/').some(s => SKIP_DIRS.has(s));
+export const shouldSkip  = p    => p.split('/').some(s => SKIP_DIRS.has(s) || /test/i.test(s));
+export const isConfigFile = name => /config\.|\.config\b/.test(name);
 
 export const readText = file => new Promise(res => {
   const r = new FileReader();

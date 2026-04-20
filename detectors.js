@@ -1,5 +1,5 @@
 import { state, thresholds } from './state.js';
-import { isSupported, shouldSkip, readText, extractImports, resolveImport, parseCommitsTxt } from './parser.js';
+import { isSupported, shouldSkip, isConfigFile, readText, extractImports, resolveImport, parseCommitsTxt } from './parser.js';
 
 export const tick = () => new Promise(r => setTimeout(r, 40));
 
@@ -319,7 +319,7 @@ export async function analyseFiles(files, onProgress) {
   const root = arr[0]?.webkitRelativePath?.split('/')[0] ?? '';
 
   const promises = arr
-    .filter(f => isSupported(f.name) && !shouldSkip(f.webkitRelativePath))
+    .filter(f => isSupported(f.name) && !shouldSkip(f.webkitRelativePath) && !isConfigFile(f.name))
     .map(async f => {
       const norm = '/' + f.webkitRelativePath.slice(root.length + 1);
       const txt  = await readText(f);
